@@ -10,6 +10,7 @@ from user.models import AppUser
 class BaseTestClass(APITestCase):
   """Add common behavior needed across test classes"""
   url_name: str
+  fake_token = "co43bu-d6272225128184b0b8107dffba6e8564"
 
   def __init__(self, methodName = "runTest"):
     super().__init__(methodName)

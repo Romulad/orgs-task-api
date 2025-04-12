@@ -9,7 +9,6 @@ from auth_user.lib import validate_account_token_generator
 
 class TestValidationAccountView(BaseTestClass):
   url_name = "validate_account"
-  fake_token = "co43bu-d6272225128184b0b8107dffba6e8564"
 
   def test_validation_with_invalid_user_id(self):
     uuid = urlsafe_base64_encode(force_bytes("fake_udi"))

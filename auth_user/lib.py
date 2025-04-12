@@ -116,3 +116,19 @@ def send_password_reset_email(
       user_email,
       context
     )
+
+
+def send_password_reset_confirm_email(
+    user: AppUser, 
+):
+    user_email = user.email
+    first_name = user.first_name
+    context = {
+      "first_name": first_name,
+    }
+    send_html_email(
+      f"Password reset successfully",
+      "email/password_reset_confirm.html",
+      user_email,
+      context
+    )

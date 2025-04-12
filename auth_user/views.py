@@ -3,22 +3,26 @@ from django.utils.http import urlsafe_base64_decode
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.http.response import Http404
+from django.contrib.auth.tokens import default_token_generator
 
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.serializers import ValidationError
 from drf_spectacular.utils import extend_schema
 
 from .serializers import (
   RegistrationSerializer,
   RegistrationResponseSerializer,
-  PasswordResetSerializer
+  PasswordResetSerializer,
+  PasswordResetConfirmSerializer
 )
 from .lib import (
    validate_account_token_generator, 
    send_validation_email,
-   send_password_reset_email
+   send_password_reset_email,
+   send_password_reset_confirm_email
 )
 from app_lib.global_serializers import (
    GlobalMessageResponse
@@ -118,33 +122,43 @@ class PasswordResetView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
-  # serializer_class = PasswordResetConfirmSerializer
+  serializer_class = PasswordResetConfirmSerializer
 
+  @extend_schema(
+      request=PasswordResetConfirmSerializer,
+      responses={
+        status.HTTP_200_OK: GlobalMessageResponse,
+      }
+  )
   def post(self, request, uuid, token):
-    pass
-      # user_email = force_str(urlsafe_base64_decode(uuid))
+    user_email = force_str(urlsafe_base64_decode(uuid))
+    user_model = get_user_model()
+    bad_response = Response(
+      {"message": "Invalid or expired link"},
+      status.HTTP_400_BAD_REQUEST
+    )
 
-      # try:
-      #   user = get_object_or_404(AppUser, email=user_email)
-      # except:
-      #   return Response(
-      #      "Invalid link",
-      #      status.HTTP_400_BAD_REQUEST
-      #   )
-      
-      # if not default_token_generator.check_token(user, token):
-      #    return Response(
-      #      "Invalid link",
-      #      status.HTTP_400_BAD_REQUEST
-      #   )
-      
-      # serializer = self.serializer_class(data=request.data)
-      # if not serializer.is_valid():
-      #    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+      user = get_object_or_404(user_model, email=user_email)
+    except:
+      return bad_response
+    
+    if not default_token_generator.check_token(user, token):
+       return bad_response
+    
+    serializer = self.serializer_class(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-      # new_password = serializer.data['password']
+    new_password = serializer.data['password']
+    if user.check_password(new_password):
+      raise ValidationError(
+        {"password": ["You can not use your old password"]}
+      )
 
-      # user.set_password(new_password)
-      # user.save()
+    user.set_password(new_password)
+    user.save()
+    send_password_reset_confirm_email(user)
 
-      # return Response("Password successfully updated")
+    return Response(
+      {"message": "You password has been changed successfully"}
+    )
