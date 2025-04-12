@@ -2,26 +2,34 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.http.response import Http404
 
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import extend_schema
 
 from .serializers import (
   RegistrationSerializer,
-  RegistrationResponseSerializer
+  RegistrationResponseSerializer,
+  PasswordResetSerializer
 )
-from .lib import validate_account_token_generator, send_validation_email
+from .lib import (
+   validate_account_token_generator, 
+   send_validation_email,
+   send_password_reset_email
+)
+from app_lib.global_serializers import (
+   GlobalMessageResponse
+)
 
 class RegistrationView(APIView):
   serializer_class = RegistrationSerializer
 
   @extend_schema(
       request=RegistrationSerializer,
-      responses={201: RegistrationResponseSerializer},
+      responses={status.HTTP_201_CREATED: RegistrationResponseSerializer},
   )
   def post(self, request:Request):
     """
@@ -43,12 +51,8 @@ class ValidateNewUserAccountView(APIView):
    
    @extend_schema(
       responses={
-        200: inline_serializer(
-           "SuccessResponse", {"message": serializers.CharField()}
-        ),
-        400: inline_serializer(
-           "BadRequestResponse", {"message": serializers.CharField()}
-        )
+        status.HTTP_200_OK: GlobalMessageResponse,
+        status.HTTP_400_BAD_REQUEST: GlobalMessageResponse
       }
    )
    def get(self, request: Request, uuid:str, token:str):
@@ -65,7 +69,7 @@ class ValidateNewUserAccountView(APIView):
 
       try:
         user = get_object_or_404(user_model, email=user_email)
-      except:
+      except Http404:
         return bad_response
       
       token_is_valid = validate_account_token_generator.check_token(user, token)
@@ -82,3 +86,65 @@ class ValidateNewUserAccountView(APIView):
          )
       else:
          return bad_response
+
+
+class PasswordResetView(APIView):
+  serializer_class = PasswordResetSerializer
+
+  @extend_schema(
+      request=PasswordResetSerializer,
+      responses={
+        status.HTTP_200_OK: GlobalMessageResponse,
+      }
+  )
+  def post(self, request):
+    """# Request a password reset
+    Use this endpoint to request a password reset email
+    """
+    serializer = self.serializer_class(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    email = serializer.data['email']
+    user_model = get_user_model()
+
+    try:
+        user = get_object_or_404(user_model, email=email)
+    except Http404:
+        pass
+    else:
+      if user and user.is_active:
+        send_password_reset_email(user, request)
+    
+    return Response({"message": "Reset password email has been sent successfully"})
+
+
+class PasswordResetConfirmView(APIView):
+  # serializer_class = PasswordResetConfirmSerializer
+
+  def post(self, request, uuid, token):
+    pass
+      # user_email = force_str(urlsafe_base64_decode(uuid))
+
+      # try:
+      #   user = get_object_or_404(AppUser, email=user_email)
+      # except:
+      #   return Response(
+      #      "Invalid link",
+      #      status.HTTP_400_BAD_REQUEST
+      #   )
+      
+      # if not default_token_generator.check_token(user, token):
+      #    return Response(
+      #      "Invalid link",
+      #      status.HTTP_400_BAD_REQUEST
+      #   )
+      
+      # serializer = self.serializer_class(data=request.data)
+      # if not serializer.is_valid():
+      #    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+      # new_password = serializer.data['password']
+
+      # user.set_password(new_password)
+      # user.save()
+
+      # return Response("Password successfully updated")

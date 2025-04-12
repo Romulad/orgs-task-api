@@ -73,3 +73,40 @@ class RegistrationResponseSerializer(serializers.Serializer):
   email = serializers.EmailField(required=True)
   first_name = serializers.CharField(required=True)
   last_name = serializers.CharField()
+
+
+class PasswordResetSerializer(serializers.Serializer):
+  email = serializers.EmailField(
+    required=True,
+    error_messages={
+      "required": "The email field is required",
+      "invalid": "Please provide a valid email address"
+    }
+  )
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+  password = serializers.CharField(
+    required=True, min_length=8,
+    error_messages={
+      "required": "The password field is required",
+      "min_length": "Your password must contain at least 8 characters"
+    }
+  )
+  password2 = serializers.CharField(
+    required=True, min_length=8
+  )
+
+  def validate_password(self, password:str):
+    result = validate_password(password)
+    if isinstance(result, str):
+      raise serializers.ValidationError(result)
+    return password
+  
+  def validate(self, attrs):
+      if attrs['password'] != attrs['password2']:
+          raise serializers.ValidationError(
+            {"password2": "Passwords must match."}
+          )
+      return attrs
+

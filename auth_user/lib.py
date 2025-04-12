@@ -1,13 +1,12 @@
-from urllib.parse import urlparse
-
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.request import Request
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from app_lib.email import send_html_email
+from app_lib.urls import get_app_base_url
 from user.models import AppUser
 
 
@@ -82,17 +81,38 @@ def send_validation_email(
     first_name = user.first_name
     uuid = urlsafe_base64_encode(force_bytes(user_email))
     token = validate_account_token_generator.make_token(user)
-    url = urlparse(request.build_absolute_uri())
     context = {
       "first_name": first_name,
       "uuid": uuid,
       "token": token,
-      "base_url": f"{url.scheme}://{url.hostname}",
+      "base_url": get_app_base_url(request),
       "first_time": first_time
     }
     send_html_email(
       f"Welcome {first_name}",
       "email/welcome_email.html",
+      user_email,
+      context
+    )
+
+
+def send_password_reset_email(
+    user: AppUser, 
+    request: Request,
+):
+    user_email = user.email
+    first_name = user.first_name
+    uuid = urlsafe_base64_encode(force_bytes(user_email))
+    token = default_token_generator.make_token(user)
+    context = {
+      "first_name": first_name,
+      "uuid": uuid,
+      "token": token,
+      "base_url": get_app_base_url(request),
+    }
+    send_html_email(
+      f"Reset your password",
+      "email/password_reset_email.html",
       user_email,
       context
     )
