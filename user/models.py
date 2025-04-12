@@ -41,11 +41,24 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
         _("is owner"),
         default=False,
         help_text=_(
-            "Designates whether this user is an organization owner or not"
+            "Designates whether this user is an organization owner."
+            "A owner by default has a full access over his ressources"
         ),
     )
-    orgs = models.ManyToManyField(Organization, verbose_name=_('organizations'))
-    date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
+    is_manager = models.BooleanField(
+        _("is manager"),
+        default=False,
+        help_text=_(
+            "Designates whether this user is an organization manager."
+            "A manager by default has a read/update access over ressources"
+        ),
+    )
+    orgs = models.ManyToManyField(
+        Organization, verbose_name=_('organizations')
+    )
+    date_joined = models.DateTimeField(
+        _("date joined"), default=timezone.now
+    )
     
     objects = CustomUserManager()
 

@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from auth_user.lib import validate_password
+from auth_user.lib import (
+  validate_password, 
+)
 from user.models import AppUser
 
 class RegistrationSerializer(serializers.Serializer):
@@ -21,7 +23,7 @@ class RegistrationSerializer(serializers.Serializer):
     }
   )
   last_name = serializers.CharField(
-    max_length=30, required=False
+    required=False, default="", allow_blank=True
   )
   password = serializers.CharField(
     min_length=8, required=True,
@@ -52,22 +54,18 @@ class RegistrationSerializer(serializers.Serializer):
     password = attrs.get("password", "")
     password2 = attrs.get("password2", "")
     if password != password2 :
-      raise serializers.ValidationError('Password mismatch')
+      raise serializers.ValidationError(
+        {"password2": 'Password mismatch'}
+      )
     return attrs
 
   def create(self, validated_data:dict) -> AppUser:
     user_model = get_user_model()
     validated_data.pop('password2')
     validated_data.setdefault('is_active', False)
+    validated_data.setdefault('is_owner', True)
     new_user = user_model.objects.create_user(**validated_data)
-    # add user to group owner
-    # owner group should have necessary permission
-    # send validation email
     return new_user
-
-  def send_validation_email(self):
-    user_email = self.validated_data['email']
-
 
 class RegistrationResponseSerializer(serializers.Serializer):
   """Registration response fields"""

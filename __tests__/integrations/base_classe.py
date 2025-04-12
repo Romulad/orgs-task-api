@@ -1,5 +1,6 @@
 from rest_framework.test import APIClient, APITestCase
 from django.contrib.auth import get_user_model
+from django.core import mail
 
 from user.models import AppUser
 
@@ -12,6 +13,9 @@ class BaseTestClass(APITestCase):
     self.client = APIClient()
     self.user_model : AppUser = get_user_model()
   
+  def get_mailbox(self):
+    return mail.outbox
+  
   def create_user(
       self, 
       email="myemail@gmail.com", 
@@ -19,7 +23,7 @@ class BaseTestClass(APITestCase):
       **kwargs
   ) -> AppUser :
     created_user = self.user_model.objects.create_user(
-      email=email, password=password, **kwargs
+      email=email, password=password, is_active=False, **kwargs
     )
     return created_user
   

@@ -17,8 +17,8 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "email"), list)
-    self.assertIsInstance(getattr(data, "email")[0], "You need to provide a valid email address")
+    self.assertIsInstance(data.get("email"), list)
+    self.assertEqual(data.get("email")[0], "You need to provide a valid email address")
 
   def test_account_creation_with_invalid_email(self):
     response = self.client.post(
@@ -26,8 +26,8 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "email"), list)
-    self.assertIsInstance(getattr(data, "email")[0], "Your email address is invalid")
+    self.assertIsInstance(data.get("email"), list)
+    self.assertEqual(data.get("email")[0], "Your email address is invalid")
 
   def test_account_creation_with_existed_email(self):
     self.create_user(email="email@gmail.com")
@@ -37,8 +37,8 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "email"), list)
-    self.assertIsInstance(getattr(data, "email")[0], "A user with that email already exists.")
+    self.assertIsInstance(data.get("email"), list)
+    self.assertEqual(data.get("email")[0], "A user with that email already exists.")
 
   def test_account_creation_empty_first_name(self):
     response = self.client.post(
@@ -46,8 +46,8 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "first_name"), list)
-    self.assertIsInstance(getattr(data, "first_name")[0], "You need to provide a valid first name")
+    self.assertIsInstance(data.get("first_name"), list)
+    self.assertEqual(data.get("first_name")[0], "You need to provide a valid first name")
   
   def test_account_creation_with_first_name_less_3(self):
     response = self.client.post(
@@ -55,9 +55,9 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "first_name"), list)
-    self.assertIsInstance(
-      getattr(data, "first_name")[0], 
+    self.assertIsInstance(data.get("first_name"), list)
+    self.assertEqual(
+      data.get("first_name")[0], 
       "Your first name must contain at least 3 characters"
     )
   
@@ -68,9 +68,10 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "password"), list)
-    self.assertIsInstance(
-      getattr(data, "password")[0], 
+    password_errors = data.get("password")
+    self.assertIsInstance(password_errors, list)
+    self.assertEqual(
+      password_errors[0], 
       "Your password must contain at least 8 characters"
     )
 
@@ -81,9 +82,10 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "password"), list)
-    self.assertIsInstance(
-      getattr(data, "password")[0], 
+    password_errors = data.get("password")
+    self.assertIsInstance(password_errors, list)
+    self.assertEqual(
+      password_errors[0],
       "Your password must include at least one of these characters : @ . + - / _ "
     )
 
@@ -94,9 +96,10 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "password"), list)
-    self.assertIsInstance(
-      getattr(data, "password")[0], 
+    password_errors = data.get("password")
+    self.assertIsInstance(password_errors, list)
+    self.assertEqual(
+      password_errors[0], 
       "Your password must include at least one digit"
     )
 
@@ -108,9 +111,10 @@ class TestRegisterView(BaseTestClass):
     )
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     data = json.loads(response.content)
-    self.assertIsInstance(getattr(data, "password2"), list)
-    self.assertIsInstance(
-      getattr(data, "password2")[0], 
+    password2_errors = data.get("password2")
+    self.assertIsInstance(password2_errors, list)
+    self.assertEqual(
+      password2_errors[0], 
       "Password mismatch"
     )
   
@@ -123,9 +127,29 @@ class TestRegisterView(BaseTestClass):
     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
     user = get_object_or_404(self.user_model, email="validemail@gmail.com")
     self.assertFalse(user.is_active)
+  
+  def test_account_creation_success_with_owner_attr(self):
+    response = self.client.post(
+      reverse(self.url_name), 
+      {"email": "validemail@gmail.com", "first_name": "testnme", 
+      "password": "Test1@Password", "password2": "Test1@Password"}
+    )
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    user = get_object_or_404(self.user_model, email="validemail@gmail.com")
+    self.assertTrue(user.is_owner)
 
   def test_account_creation_success_with_email_sent(self):
-    pass
+    response = self.client.post(
+      reverse(self.url_name), 
+      {"email": "validemail@gmail.com", "first_name": "testnme", 
+      "password": "Test1@Password", "password2": "Test1@Password"}
+    )
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    mail_sent = self.get_mailbox()[0]
+    self.assertEqual(len(self.get_mailbox()), 1)
+    self.assertEqual(mail_sent.to[0], "validemail@gmail.com")
+    self.assertIn("Welcome testnme", mail_sent.subject)
+    self.assertRegex(mail_sent.body, "please verify your email address by clicking the button below")
 
   def test_account_creation_success_with_response(self):
     response = self.client.post(
@@ -139,6 +163,3 @@ class TestRegisterView(BaseTestClass):
     self.assertDictEqual(
       data, RegistrationResponseSerializer(user).data
     )
-
-  def test_account_creation_success_with_user_owner_group_and_perm(self):
-    pass
