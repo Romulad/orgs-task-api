@@ -141,7 +141,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'Multi-level task management system',
     'DESCRIPTION': 'Task management system',
     'VERSION': '1.0.0',
-    # 'SERVE_INCLUDE_SCHEMA': False,
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 EMAIL_HOST = 'smtp.gmail.com'

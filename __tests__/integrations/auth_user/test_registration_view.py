@@ -7,7 +7,6 @@ from rest_framework import status
 from ..base_classe import BaseTestClass
 from auth_user.serializers import RegistrationResponseSerializer
 
-
 class TestRegisterView(BaseTestClass):
   url_name = "register"
 

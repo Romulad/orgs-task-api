@@ -14,7 +14,7 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
         primary_key=True, default=uuid.uuid4, 
         editable=False
     )
-    email = models.CharField(
+    email = models.EmailField(
         _("email"),
         unique=True,
         validators=[EmailValidator],
@@ -22,8 +22,12 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
             "unique": _("A user with that email already exists."),
         },
     )
-    first_name = models.CharField(_("first name"), max_length=150)
-    last_name = models.CharField(_("last name"), max_length=150, blank=True)
+    first_name = models.CharField(
+        _("first name"), max_length=150
+    )
+    last_name = models.CharField(
+        _("last name"), max_length=150, blank=True
+    )
     is_staff = models.BooleanField(
         _("staff status"),
         default=False,
@@ -54,7 +58,7 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
         ),
     )
     orgs = models.ManyToManyField(
-        Organization, verbose_name=_('organizations')
+        Organization, verbose_name=_('organizations'), blank=True, null=True
     )
     date_joined = models.DateTimeField(
         _("date joined"), default=timezone.now
