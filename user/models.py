@@ -58,10 +58,13 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
         ),
     )
     orgs = models.ManyToManyField(
-        Organization, verbose_name=_('organizations'), blank=True, null=True
+        Organization, verbose_name=_('organizations'), blank=True,
     )
-    date_joined = models.DateTimeField(
-        _("date joined"), default=timezone.now
+    created_at = models.DateTimeField(
+        _("date joined"), default=timezone.now, db_index=True
+    )
+    created_by = models.ForeignKey(
+        "self", models.SET_NULL, verbose_name=_("Créateur"),  null=True
     )
     
     objects = CustomUserManager()

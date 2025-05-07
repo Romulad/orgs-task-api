@@ -40,7 +40,7 @@ class AbstractBaseModel(models.Model):
         ),
     )
     created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name=_('created at')
+        auto_now_add=True, verbose_name=_('created at'), db_index=True
     )
     updated_at = models.DateTimeField(
         auto_now=True, verbose_name=_('modified at')

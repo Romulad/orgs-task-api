@@ -4,7 +4,7 @@ from .models import AppUser
 
 class UserSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
-    date_joined = serializers.ReadOnlyField()
+    created_at = serializers.ReadOnlyField()
     first_name = serializers.CharField(min_length=3)
     class Meta:
         model = AppUser
@@ -13,13 +13,13 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
-            "date_joined"
+            "created_at"
         ]
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
-    date_joined = serializers.ReadOnlyField()
+    created_at = serializers.ReadOnlyField()
     first_name = serializers.CharField(min_length=3)
     class Meta:
         model = AppUser
@@ -31,5 +31,5 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "is_owner",
             "is_manager",
             "orgs",
-            "date_joined"
+            "created_at"
         ]

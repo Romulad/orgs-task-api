@@ -29,6 +29,7 @@ class BaseTestClass(APITestCase):
     super().__init__(methodName)
     self.client = APIClient()
     self.user_model : User = get_user_model()
+    self.status = status
   
   def get_mailbox(self):
     return mail.outbox
@@ -60,6 +61,9 @@ class BaseTestClass(APITestCase):
     created_user.is_active = True
     created_user.save()
     return created_user
+  
+  def loads(self, content):
+    return json.loads(content)
 
   def get(
       self, 
