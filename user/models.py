@@ -4,16 +4,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import EmailValidator
-from django.utils import timezone
 
 from .user_manager import CustomUserManager
 from organization.models import Organization
+from app_lib.models import AbstractBaseModel
 
-class AppUser(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, 
-        editable=False
-    )
+class AppUser(AbstractBaseModel, AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(
         _("email"),
         unique=True,
@@ -59,12 +55,6 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
     )
     orgs = models.ManyToManyField(
         Organization, verbose_name=_('organizations'), blank=True,
-    )
-    created_at = models.DateTimeField(
-        _("date joined"), default=timezone.now, db_index=True
-    )
-    created_by = models.ForeignKey(
-        "self", models.SET_NULL, verbose_name=_("Créateur"),  null=True
     )
     
     objects = CustomUserManager()

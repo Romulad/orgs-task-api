@@ -1,8 +1,11 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
+from django.db.models.query import Q
 
 from .models import Organization
+from user.models import AppUser as User
 from user.serializers import UserSerializer
+from app_lib.email import send_invitation_success_email
 
 class OrganizationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
@@ -55,3 +58,33 @@ class CreateOrganizationSerializer(serializers.ModelSerializer):
         validated_data["owner"] = user
         validated_data["created_by"] = user
         return super().create(validated_data)
+
+
+class UpdateOrganizationSerializer(
+    OrganizationSerializer, CreateOrganizationSerializer
+) :
+    members = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.all(),
+        required=False,
+    )
+
+    def validate_members(self, memberIds:list):
+        owner_id = self.instance.owner.id
+        not_allowed = User.objects.filter(
+            Q(id__in=memberIds),
+            ~Q(created_by__id=owner_id), 
+            ~Q(can_be_accessed_by__in=[owner_id])
+        )
+        if not_allowed:
+            raise serializers.ValidationError(
+                _("You can't add a user you didn't create or have access to as member")
+            )
+        return memberIds
+
+    def update(self, instance, validated_data):
+        memberIds = validated_data["members"]
+        new_members = instance.members.filter(~Q(id__in=memberIds))
+        instance = super().update(instance, validated_data)
+        send_invitation_success_email(new_members, instance.name)
+        return instance
