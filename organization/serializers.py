@@ -1,11 +1,14 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from django.db.models.query import Q
 
 from .models import Organization
 from user.models import AppUser as User
 from user.serializers import UserSerializer
 from app_lib.email import send_invitation_success_email
+
+from django.shortcuts import get_object_or_404
+from django.test.utils import CaptureQueriesContext
+from django.db import connection, reset_queries
 
 class OrganizationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
@@ -65,26 +68,43 @@ class UpdateOrganizationSerializer(
 ) :
     members = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=User.objects.all(),
-        required=False,
+        queryset=User.objects.select_related(
+                "created_by"
+            ).prefetch_related(
+                "can_be_accessed_by"
+            ),
+        pk_field=serializers.UUIDField(),
+        allow_null=True
     )
 
-    def validate_members(self, memberIds:list):
+    def validate_members(self, members:list[User]):
         owner_id = self.instance.owner.id
-        not_allowed = User.objects.filter(
-            Q(id__in=memberIds),
-            ~Q(created_by__id=owner_id), 
-            ~Q(can_be_accessed_by__in=[owner_id])
-        )
-        if not_allowed:
-            raise serializers.ValidationError(
-                _("You can't add a user you didn't create or have access to as member")
-            )
-        return memberIds
-
+        for member in members:
+            is_allowed = True
+            can_have_access = owner_id in [
+                have_access.id for have_access in member.can_be_accessed_by.all()
+            ]
+            if member.created_by:
+                is_allowed = (
+                    can_have_access or
+                    member.created_by.id == owner_id
+                )
+            else:
+                is_allowed = can_have_access
+            if not is_allowed:
+                raise serializers.ValidationError(
+                    _("You can't add a user you didn't create or have access to as member")
+                )
+        return members
+    
     def update(self, instance, validated_data):
-        memberIds = validated_data["members"]
-        new_members = instance.members.filter(~Q(id__in=memberIds))
+        new_members = []
+        if (all_members := validated_data.get("members", None)):
+            existed_member_ids = [existed_mem.id for existed_mem in instance.members.all()]
+            new_members = [
+                new_member for new_member in all_members if not new_member.id in existed_member_ids
+            ]
+
         instance = super().update(instance, validated_data)
         send_invitation_success_email(new_members, instance.name)
         return instance

@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
+from django.shortcuts import get_object_or_404
 
 from .serializers import (
     OrganizationSerializer,
@@ -17,8 +18,8 @@ class OrganizationViewset(ModelViewSet):
     serializer_class=OrganizationSerializer
     filterset_class=OrganizationDataFilter
     ordering_fields=["name", "description", "created_at"]
-    queryset=OrganizationSerializer.Meta.model.objects.all().prefetch_related(
-        "members").select_related("owner").order_by("created_at")
+    queryset=OrganizationSerializer.Meta.model.objects.prefetch_related(
+        "members", "can_be_accessed_by").select_related("owner", "created_by").order_by("created_at")
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -28,12 +29,16 @@ class OrganizationViewset(ModelViewSet):
         return super().get_serializer_class()
 
     def get_serializer(self, *args, **kwargs):
-        user = self.request.user
+        if self.action in [
+            "create", "update", "partial_update"
+        ]:
+            user = self.request.user
+            context = kwargs.get("context", {})
+            context["user"] = user
+            kwargs["context"] = context
         if self.action == "create":
-            kwargs.setdefault("context", {"user": user})
             return CreateOrganizationSerializer(*args, **kwargs)
         elif self.action in ["update", "partial_update"]:
-            kwargs.setdefault("context", {"user": user})
             return UpdateOrganizationSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
 

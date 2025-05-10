@@ -106,26 +106,30 @@ class TestUpdateOrgView(BaseTestClass):
         org_data["owner"] = owner
         created_data = self.bulk_create_object(Organization, [org_data])
         
-        req_data = {**self.data}
-        req_data["members"] = [obj.id for obj in [user, user2]]
+        req_data = {
+            **self.data, 
+            "members": [obj.id for obj in [user, user2]]
+        }
         response = self.auth_put(
             owner, 
             req_data, 
             [created_data[0].id]
         )
+        # print(response.data)
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
         updated_data = Organization.objects.get(id=created_data[0].id)
-        self.assertEqual(response.data.get("id"), str(updated_data.id))
-        self.assertEqual(response.data.get("name"), req_data.get("name"))
-        self.assertEqual(response.data.get("description"), req_data.get("description"))
-        self.assertEqual(len(response.data.get("members")), 2)
+        self.assertEqual(data.get("id"), str(updated_data.id))
+        self.assertEqual(data.get("name"), req_data.get("name"))
+        self.assertEqual(data.get("description"), req_data.get("description"))
+        self.assertEqual(len(data.get("members")), 2)
         # data is updated
         updated_data = Organization.objects.get(id=created_data[0].id)
         members = updated_data.members.all()
         self.assertEqual(updated_data.name, req_data.get("name"))
         self.assertEqual(updated_data.description, req_data.get("description"))
         self.assertEqual(len(members), 2)
-        self.assertIn(user.id, members)
+        self.assertIn(user, members)
         # invitation email has been sent
         mailbox = self.get_mailbox()
         to_list = [mail.to[0] for mail in mailbox]
@@ -133,7 +137,7 @@ class TestUpdateOrgView(BaseTestClass):
         self.assertIn(user.email, to_list)
         self.assertIn(user2.email, to_list)
         self.assertEqual(mailbox[0].subject, "Notification - You have been add to org updatename")
-    
+        
     def test_access_allow_user_can_update_data_and_members(self):
         owner = self.create_and_active_user()
         can_access_user = self.create_and_active_user(email="canaccess@gnail.com")
@@ -155,22 +159,22 @@ class TestUpdateOrgView(BaseTestClass):
             [created_data[0].id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
         updated_data = Organization.objects.get(id=created_data[0].id)
-        self.assertEqual(response.data.get("id"), str(updated_data.id))
-        self.assertEqual(response.data.get("name"), req_data.get("name"))
-        self.assertEqual(response.data.get("description"), req_data.get("description"))
-        self.assertEqual(len(response.data.get("members")), 2)
+        self.assertEqual(data.get("id"), str(updated_data.id))
+        self.assertEqual(data.get("name"), req_data.get("name"))
+        self.assertEqual(data.get("description"), req_data.get("description"))
+        self.assertEqual(len(data.get("members")), 2)
         # data is updated
         updated_data = Organization.objects.get(id=created_data[0].id)
         members = updated_data.members.all()
         self.assertEqual(updated_data.name, req_data.get("name"))
         self.assertEqual(updated_data.description, req_data.get("description"))
         self.assertEqual(len(members), 2)
-        self.assertIn(user.id, members)
+        self.assertIn(user, members)
         # invitation email has been sent
         mailbox = self.get_mailbox()
         to_list = [mail.to[0] for mail in mailbox]
         self.assertEqual(len(mailbox), 1)
         self.assertEqual(user2.email, to_list[0])
         self.assertEqual(mailbox[0].subject, "Notification - You have been add to org updatename")
-    

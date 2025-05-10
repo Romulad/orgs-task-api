@@ -107,14 +107,15 @@ class TestPartialUpdateOrgView(BaseTestClass):
             [created_data[0].id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
         updated_data = Organization.objects.get(id=created_data[0].id)
-        self.assertEqual(response.data.get("id"), str(updated_data.id))
-        self.assertEqual(len(response.data.get("members")), 2)
+        self.assertEqual(data.get("id"), str(updated_data.id))
+        self.assertEqual(len(data.get("members")), 2)
         # data is updated
         updated_data = Organization.objects.get(id=created_data[0].id)
         members = updated_data.members.all()
         self.assertEqual(len(members), 2)
-        self.assertIn(user2.id, members)
+        self.assertIn(user2, members)
         # invitation email has been sent
         mailbox = self.get_mailbox()
         to_list = [mail.to[0] for mail in mailbox]
@@ -140,14 +141,15 @@ class TestPartialUpdateOrgView(BaseTestClass):
             [created_data[0].id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
         updated_data = Organization.objects.get(id=created_data[0].id)
-        self.assertEqual(response.data.get("id"), str(updated_data.id))
-        self.assertEqual(len(response.data.get("members")), 2)
+        self.assertEqual(data.get("id"), str(updated_data.id))
+        self.assertEqual(len(data.get("members")), 2)
         # data is updated
         updated_data = Organization.objects.get(id=created_data[0].id)
         members = updated_data.members.all()
         self.assertEqual(len(members), 2)
-        self.assertIn(user2.id, members)
+        self.assertIn(user2, members)
         # invitation email has been sent
         mailbox = self.get_mailbox()
         to_list = [mail.to[0] for mail in mailbox]

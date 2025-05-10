@@ -29,6 +29,6 @@ class CanAccessedObjectInstance(BasePermission):
             can_have_access = created_by.id == user.id
 
         if can_be_accessed_by and not can_have_access:
-            can_have_access = can_be_accessed_by.filter(id=user.id).exists()
-        
+            can_have_access = user.id in [cba.id for cba in can_be_accessed_by.all()]
+            
         return can_have_access
