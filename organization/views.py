@@ -13,11 +13,13 @@ from rest_framework import status
 from .serializers import (
     OrganizationSerializer,
     CreateOrganizationSerializer,
-    UpdateOrganizationSerializer
+    UpdateOrganizationSerializer,
+    CreateDepartmentSerializer
 )
 from .filters import (
     OrganizationDataFilter
 )
+from .models import Organization
 from app_lib.permissions import CanAccessedObjectInstance
 from app_lib.global_serializers import BulkDeleteResourceSerializer
 
@@ -27,15 +29,11 @@ class OrganizationViewset(ModelViewSet):
     serializer_class=OrganizationSerializer
     filterset_class=OrganizationDataFilter
     ordering_fields=["name", "description", "created_at"]
-    queryset=OrganizationSerializer.Meta.model.objects.prefetch_related(
+    queryset=Organization.objects.prefetch_related(
         "members", "can_be_accessed_by").select_related("owner", "created_by").order_by("created_at")
 
     def get_serializer_class(self):
-        if self.action == "create":
-            return CreateOrganizationSerializer
-        elif self.action in ["update", "partial_update"]:
-            return UpdateOrganizationSerializer
-        elif self.action == "bulk_delete":
+        if self.action == "bulk_delete":
             return BulkDeleteResourceSerializer
         return super().get_serializer_class()
 
@@ -58,6 +56,9 @@ class OrganizationViewset(ModelViewSet):
         return super().get_queryset().filter(
             Q(owner=user) | Q(can_be_accessed_by__in=[user])
         )
+    
+    def get_object(self) -> Organization:
+        return super().get_object()
 
     def get_permissions(self):
         if self.action in [
@@ -99,4 +100,27 @@ class OrganizationViewset(ModelViewSet):
                 "deleted": deleted,
                 "not_found": not_found
             }
+        )
+
+    @action(
+        methods=[HTTPMethod.POST],
+        detail=True,
+        url_name='department',
+        url_path='department',
+        serializer_class=CreateDepartmentSerializer,
+        permission_classes=[
+            IsAuthenticated, CanAccessedObjectInstance
+        ]
+    )
+    def create_department(self, request:Request, pk=None):
+        user = request.user
+        org = self.get_object()
+        serializer = self.get_serializer(
+            data=request.data, context={"user":user, 'org': org}
+        )
+        serializer.is_valid(raise_exception=True)
+        created = serializer.save()
+        return Response(
+            self.get_serializer_class()(created).data,
+            status=status.HTTP_201_CREATED
         )

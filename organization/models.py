@@ -28,3 +28,27 @@ class Organization(AbstractBaseModel):
 
   def __str__(self):
     return f"{self.owner.email}_{self.name}"
+  
+
+class Department(AbstractBaseModel):
+  name = models.CharField(
+    _('Department name'), max_length=100
+  )
+  description = models.TextField(
+    _("Department description"), default=""
+  )
+  org = models.ForeignKey(
+    Organization, on_delete=models.CASCADE, 
+    verbose_name=_('organization'), related_name="depart_own"
+  )
+  members = models.ManyToManyField(
+    settings.AUTH_USER_MODEL, verbose_name=_('Department members')
+  )
+
+  class Meta:
+    verbose_name = _('Department')
+    verbose_name_plural = _('Departments')
+    unique_together = ["name", "org"]
+
+  def __str__(self):
+    return f"{self.name}"

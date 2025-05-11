@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
-from .models import Organization
+from .models import Organization, Department
 from user.models import AppUser as User
 from user.serializers import UserSerializer
 from app_lib.email import send_invitation_success_email
@@ -106,3 +106,41 @@ class UpdateOrganizationSerializer(
         instance = super().update(instance, validated_data)
         send_invitation_success_email(new_members, instance.name)
         return instance
+
+
+class CreateDepartmentSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
+    created_at = serializers.ReadOnlyField()
+    org = serializers.PrimaryKeyRelatedField(read_only=True)
+    name = serializers.CharField(
+        required=True,
+        error_messages={
+            "required": _("The name field is required"),
+            "blank": _("Name field can't not be empty")
+        }
+    )
+    class Meta:
+        model = Department
+        fields = [
+            'id',
+            'name',
+            'description',
+            'org',
+            'created_at'
+        ]
+    
+    def validate_name(self, value:str):
+        org = self.context["org"]
+        existed = self.Meta.model.objects.filter(name=value, org=org).exists()
+        if existed:
+            raise serializers.ValidationError(
+                _("Organization already has a department with that name")
+            )
+        return value
+
+    def create(self, validated_data:dict):
+        org = self.context["org"]
+        user = self.context['user']
+        validated_data["org"] = org
+        validated_data["created_by"] = user
+        return super().create(validated_data)
