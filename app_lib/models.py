@@ -54,3 +54,11 @@ class AbstractBaseModel(models.Model):
 
     class Meta:
         abstract = True
+    
+    def delete(self):
+        self.is_deleted = True
+        self.save()
+        return True
+    
+    def hard_delete(self, using=None, keep_parents=False):
+        return super().delete(using, keep_parents)

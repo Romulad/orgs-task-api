@@ -6,10 +6,6 @@ from user.models import AppUser as User
 from user.serializers import UserSerializer
 from app_lib.email import send_invitation_success_email
 
-from django.shortcuts import get_object_or_404
-from django.test.utils import CaptureQueriesContext
-from django.db import connection, reset_queries
-
 class OrganizationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
@@ -38,6 +34,7 @@ class CreateOrganizationSerializer(serializers.ModelSerializer):
         }
     )
     owner = UserSerializer(read_only=True)
+    members = UserSerializer(many=True, read_only=True)
     class Meta:
         model = Organization
         fields = [
@@ -45,6 +42,7 @@ class CreateOrganizationSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "owner",
+            "members",
         ]
 
     def validate_name(self, value:str):
