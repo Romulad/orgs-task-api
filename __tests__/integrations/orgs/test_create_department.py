@@ -14,7 +14,7 @@ class TestCreateDepartmentView(BaseTestClass):
     - test user get not found when organization doesn't exist
     - test not creator but access allowed user can create department in org
     """
-    url_name = "orgs-department"
+    url_name = "orgs-create-department"
     orgs_data = [
         {
             "name": "my org 1", "description": "some descr"
@@ -119,3 +119,6 @@ class TestCreateDepartmentView(BaseTestClass):
             Department.objects.get(name=dep_name, org=created_org, created_by=current_user)
             self.assertEqual(len(Department.objects.all()), test_data['dep_count'])
         self.assertEqual(len(Organization.objects.all()), 3)
+        # check if org departments are updated
+        org = Organization.objects.get(id=created_org.id)
+        self.assertEqual(len(org.departments.all()), 2)

@@ -18,7 +18,12 @@ class Organization(AbstractBaseModel):
     verbose_name=_('organization owner'), related_name="org_owner"
   )
   members = models.ManyToManyField(
-    settings.AUTH_USER_MODEL, verbose_name=_('orgnization members')
+    settings.AUTH_USER_MODEL, verbose_name=_('organization members')
+  )
+  departments = models.ManyToManyField(
+    'organization.Department',
+    related_name="owned_by_org", 
+    verbose_name=_('organization departments'), blank=True
   )
 
   class Meta:

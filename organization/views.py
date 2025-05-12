@@ -14,10 +14,12 @@ from .serializers import (
     OrganizationSerializer,
     CreateOrganizationSerializer,
     UpdateOrganizationSerializer,
-    CreateDepartmentSerializer
+    CreateDepartmentSerializer,
+    DepartmentSerializer
 )
 from .filters import (
-    OrganizationDataFilter
+    OrganizationDataFilter,
+    DepartmentDataFilter
 )
 from .models import Organization
 from app_lib.permissions import CanAccessedObjectInstance
@@ -30,7 +32,8 @@ class OrganizationViewset(ModelViewSet):
     filterset_class=OrganizationDataFilter
     ordering_fields=["name", "description", "created_at"]
     queryset=Organization.objects.prefetch_related(
-        "members", "can_be_accessed_by").select_related("owner", "created_by").order_by("created_at")
+        "members", "can_be_accessed_by", "departments"
+    ).select_related("owner", "created_by").order_by("created_at")
 
     def get_serializer_class(self):
         if self.action == "bulk_delete":
@@ -69,6 +72,19 @@ class OrganizationViewset(ModelViewSet):
             ]
         return super().get_permissions()
 
+    def get_queryset_list_response(self, all_queryset, filter_class=None):
+        if filter_class is not None:
+            setattr(self, "filterset_class", filter_class)
+        queryset = self.filter_queryset(all_queryset)
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(
         detail=False,
         methods=[HTTPMethod.DELETE],
@@ -105,8 +121,8 @@ class OrganizationViewset(ModelViewSet):
     @action(
         methods=[HTTPMethod.POST],
         detail=True,
-        url_name='department',
-        url_path='department',
+        url_name='create-department',
+        url_path='create-department',
         serializer_class=CreateDepartmentSerializer,
         permission_classes=[
             IsAuthenticated, CanAccessedObjectInstance
@@ -124,3 +140,33 @@ class OrganizationViewset(ModelViewSet):
             self.get_serializer_class()(created).data,
             status=status.HTTP_201_CREATED
         )
+
+    @action(
+        detail=True,
+        url_name='list-department',
+        url_path='list-department',
+        methods=[HTTPMethod.GET],
+        serializer_class=DepartmentSerializer,
+        permission_classes=[
+            IsAuthenticated, CanAccessedObjectInstance
+        ],
+        filterset_class=None,
+        ordering_fields=['name', "description", "created_at"]
+    )
+    def list_department(self, request:Request, pk=None):
+        org = self.get_object()
+        queryset = org.departments.all()
+        return self.get_queryset_list_response(queryset, DepartmentDataFilter)
+
+    @action(
+        detail=True,
+        url_name='update-department',
+        url_path='update-department',
+        methods=[HTTPMethod.PUT],
+        serializer_class=UpdateDepartmentSerializer,
+        permission_classes=[
+            IsAuthenticated, CanAccessedObjectInstance
+        ],
+    )
+    def update_department(self, request:Request, pk=None):
+        org = self.get_object()

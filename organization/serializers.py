@@ -11,6 +11,10 @@ class OrganizationSerializer(serializers.ModelSerializer):
     created_at = serializers.ReadOnlyField()
     owner = UserSerializer(read_only=True)
     members = UserSerializer(many=True)
+    departments = serializers.PrimaryKeyRelatedField(
+        many=True,
+        read_only=True,
+    )
     
     class Meta:
         model = Organization
@@ -20,6 +24,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "description",
             "owner",
             "members",
+            'departments',
             "created_at"
         ]
 
@@ -108,17 +113,14 @@ class UpdateOrganizationSerializer(
         return instance
 
 
-class CreateDepartmentSerializer(serializers.ModelSerializer):
+class DepartmentSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
     org = serializers.PrimaryKeyRelatedField(read_only=True)
-    name = serializers.CharField(
-        required=True,
-        error_messages={
-            "required": _("The name field is required"),
-            "blank": _("Name field can't not be empty")
-        }
-    )
+    name = serializers.ReadOnlyField()
+    members = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    description = serializers.ReadOnlyField()
+
     class Meta:
         model = Department
         fields = [
@@ -126,8 +128,22 @@ class CreateDepartmentSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'org',
-            'created_at'
+            "members",
+            'created_at',
         ]
+
+
+class CreateDepartmentSerializer(DepartmentSerializer):
+    name = serializers.CharField(
+        required=True,
+        error_messages={
+            "required": _("The name field is required"),
+            "blank": _("Name field can't not be empty")
+        }
+    )
+    description = serializers.CharField(
+        required=False, allow_blank=True
+    )
     
     def validate_name(self, value:str):
         org = self.context["org"]
@@ -143,4 +159,6 @@ class CreateDepartmentSerializer(serializers.ModelSerializer):
         user = self.context['user']
         validated_data["org"] = org
         validated_data["created_by"] = user
-        return super().create(validated_data)
+        department = super().create(validated_data)
+        org.departments.add(department)
+        return department
