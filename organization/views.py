@@ -15,7 +15,8 @@ from .serializers import (
     CreateOrganizationSerializer,
     UpdateOrganizationSerializer,
     CreateDepartmentSerializer,
-    DepartmentSerializer
+    DepartmentSerializer,
+    UpdateDepartmentSerializer
 )
 from .filters import (
     OrganizationDataFilter,
@@ -32,7 +33,7 @@ class OrganizationViewset(ModelViewSet):
     filterset_class=OrganizationDataFilter
     ordering_fields=["name", "description", "created_at"]
     queryset=Organization.objects.prefetch_related(
-        "members", "can_be_accessed_by", "departments"
+        "members", "can_be_accessed_by"
     ).select_related("owner", "created_by").order_by("created_at")
 
     def get_serializer_class(self):

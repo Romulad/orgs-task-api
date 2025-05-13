@@ -5,7 +5,9 @@ from .models import AppUser
 class UserSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
-    first_name = serializers.CharField(min_length=3)
+    first_name = serializers.ReadOnlyField()
+    last_name  = serializers.ReadOnlyField()
+    email = serializers.ReadOnlyField()
     class Meta:
         model = AppUser
         fields = [
@@ -17,7 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
 
-class UserDetailSerializer(serializers.ModelSerializer):
+class UserDetailSerializer(UserSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
     first_name = serializers.CharField(min_length=3)
