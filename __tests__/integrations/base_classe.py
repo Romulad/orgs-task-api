@@ -64,6 +64,9 @@ class BaseTestClass(APITestCase):
   
   def loads(self, content):
     return json.loads(content)
+  
+  def get_ids_from(self, objs):
+    return [obj.id for obj in objs]
 
   def get(
       self, 

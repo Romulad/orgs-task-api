@@ -1,3 +1,4 @@
+import uuid
 
 from ..base_classe import BaseTestClass
 from organization.models import Organization
@@ -9,6 +10,11 @@ class TestPartialUpdateOrgView(BaseTestClass):
     - user get not found when obj does not exist
     - name should be validated for unique together with owner
     - member ids should be only user created by owner user otherwise 400 validation error
+    - test user can change org owner when he has full member access
+    - test user can't change to owner user he doesn't have access to
+    - test user can't change to owner user who doesn't have full access over existed members
+    - test user can't change to owner user who doesn't have full access over req data members
+    - test change owner user with not found error 
     - user can update datas and get good response and updated in db
     - invitation email should be sent to new users added
     """
@@ -156,3 +162,98 @@ class TestPartialUpdateOrgView(BaseTestClass):
         self.assertEqual(len(mailbox), 2)
         self.assertIn(user2.email, to_list)
         self.assertEqual(mailbox[0].subject, "Notification - You have been add to org my org 1")
+    
+    def test_change_owner_validation(self):
+        org_owner = self.create_and_active_user(email="org_owner@gmail.com")
+        new_owner = self.create_and_active_user(email="new_owner#@gma.com", created_by=org_owner)
+        new_owner2 = self.create_and_active_user(email="new_owner2#@gma.com")
+        user = self.create_and_active_user()
+        user.can_be_accessed_by.add(org_owner)
+        user1 = self.create_and_active_user('user1@gmail.com', created_by=org_owner)
+        orgs_data = [*self.orgs_data]
+        for org_data in orgs_data:
+            org_data["owner"] = org_owner
+        created_org = self.bulk_create_object(Organization, orgs_data)[0]
+        created_org.members.add(user)
+
+        test_cases_data = [
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "owner": new_owner2.id,
+                },
+               "field": "owner",
+               "contain": "user you didn't create or have access to as owner"
+            },
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "owner": new_owner.id,
+                },
+               "field": "members",
+               "contain": "user you didn't create or have access to as member"
+            },
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "owner": new_owner.id, 
+                   "members": [user.id, user1.id],
+                },
+               "field": "members",
+               "contain": "user you didn't create or have access to as member",
+               "before_req": lambda: user.can_be_accessed_by.add(new_owner)
+            },
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "owner": uuid.uuid4(),
+                },
+               "field": "owner",
+            }
+        ]
+
+        for test_data in test_cases_data:
+            current_user = test_data["user"]
+            req_data = test_data['req_data']
+            contain = test_data.get('contain')
+            field = test_data['field']
+            if (fn := test_data.get("before_req", None)):
+                fn()
+            response = self.auth_patch(current_user, req_data, [created_org.id])
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            data = self.loads(response.content)
+            errors = data.get(field)
+            self.assertIsInstance(errors, list)
+            if contain:
+                self.assertIn(contain, errors[0])
+        
+    def test_success_owner_update(self):
+        org_owner = self.create_and_active_user(email="org_owner@gmail.com")
+        new_owner = self.create_and_active_user(email="new_owner#@gma.com", created_by=org_owner)
+
+        user = self.create_and_active_user()
+        user.can_be_accessed_by.add(org_owner, new_owner)
+
+        user1 = self.create_and_active_user('user1@gmail.com', created_by=org_owner)
+        user1.can_be_accessed_by.add(new_owner)
+
+        orgs_data = [*self.orgs_data]
+        for org_data in orgs_data:
+            org_data["owner"] = org_owner
+        created_org = self.bulk_create_object(Organization, orgs_data)[0]
+        created_org.members.add(user)
+
+        req_data = {
+            "owner": new_owner.id, 
+            "members": [user.id, user1.id],
+        }
+        response = self.auth_patch(org_owner, req_data, [created_org.id])
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
+        self.assertIsNotNone(data.get('name'))
+        self.assertIsNotNone(data.get('description'))
+        self.assertEqual(len(data.get('members')), 2)
+        self.assertIn(str(user.id), data.get('members'))
+        self.assertIn(str(user1.id), data.get('members'))
+        self.assertEqual(data.get('owner'), str(new_owner.id))
+        self.assertEqual(len(self.get_mailbox()), 1)

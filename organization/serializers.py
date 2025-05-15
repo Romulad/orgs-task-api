@@ -84,8 +84,8 @@ class CreateOrganizationSerializer(OrganizationSerializer):
         owner = attrs.get("owner", None)
         members = attrs.get("members", None)
 
-        if members is not None:
-            if owner is not None:
+        if members:
+            if owner:
                 self.check_member_validity(members, owner)
             else:
                 self.check_member_validity(members, user)
@@ -118,6 +118,29 @@ class CreateOrganizationSerializer(OrganizationSerializer):
 
 
 class UpdateOrganizationSerializer(CreateOrganizationSerializer):
+    description = serializers.CharField(
+        required=True, allow_blank=True
+    )
+    members = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.select_related(
+                "created_by"
+            ).prefetch_related(
+                "can_be_accessed_by"
+            ),
+        pk_field=serializers.UUIDField(),
+        required=True,
+    )
+    owner = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.select_related(
+                "created_by"
+            ).prefetch_related(
+                "can_be_accessed_by"
+            ),
+        pk_field=serializers.UUIDField(),
+        required=True,
+    )
+    
     def validate_owner(self, value:User):
         instance = self.instance
         owner_id = instance.owner.id
@@ -130,30 +153,33 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
         return value
 
     def validate(self, attrs:dict):
+        from django.test.utils import CaptureQueriesContext
+        from django.db import connection, reset_queries
+
         members = attrs.get('members', None)
         owner = attrs.get('owner', None)
         all_members = self.instance.members.all()
         current_owner = self.instance.owner
 
-        if owner is not None and members is not None:
+        if owner and members:
             self.check_member_validity(members, owner)
-        elif owner is not None and members is None:
+        elif owner and not members:
             self.check_member_validity(all_members, owner)
-        elif owner is None and members is not None and members != all_members:
+        elif not owner and members and members != all_members:
                 self.check_member_validity(members, current_owner)
 
         return attrs
 
     def update(self, instance, validated_data):
-        instance = super().update(instance, validated_data)
         new_members = []
         if (all_members := validated_data.get("members", None)):
             existed_member_ids = [existed_mem.id for existed_mem in instance.members.all()]
             new_members = [
                 new_member for new_member in all_members if not new_member.id in existed_member_ids
             ]
+        updated_obj = super().update(instance, validated_data)
         send_invitation_success_email(new_members, instance.name)
-        return instance
+        return updated_obj
 
 
 class DepartmentSerializer(serializers.ModelSerializer):

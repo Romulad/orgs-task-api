@@ -1,3 +1,4 @@
+import uuid
 
 from ..base_classe import BaseTestClass
 from organization.models import Organization
@@ -8,7 +9,11 @@ class TestUpdateOrgView(BaseTestClass):
     - other can't update user data only creator or access allowed user can or 404
     - user get not found when obj does not exist
     - name should be validated for unique together with owner
-    - member ids should be only user created by owner user otherwise 400 validation error
+    - test user can't update to owner he has not access to
+    - test can't update to owner who doesn't have full access over members
+    - test can't update to owner that doesn't exist
+    - test can't update to member that doesn't exist
+    - test all field should be include
     - user can update datas and get good response and updated in db
     - invitation email should be sent to new users added
     """
@@ -61,10 +66,13 @@ class TestUpdateOrgView(BaseTestClass):
         for data in orgs_data:
             data["owner"] = user
         created_data = self.bulk_create_object(Organization, orgs_data)
+        created_org = created_data[1]
         
         response = self.auth_put(
             user, 
-            {"name": created_data[1].name}, 
+            {**self.data, "name": created_org.name,
+            "members": self.get_ids_from(created_org.members.all()),
+            "owner": created_org.owner.id}, 
             [created_data[0].id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
@@ -83,6 +91,7 @@ class TestUpdateOrgView(BaseTestClass):
         
         req_data = {**self.data}
         req_data["members"] = [obj.id for obj in [user, user2]]
+        req_data["owner"] = created_data[0].owner.id
         response = self.auth_put(
             owner, 
             req_data, 
@@ -108,14 +117,14 @@ class TestUpdateOrgView(BaseTestClass):
         
         req_data = {
             **self.data, 
-            "members": [obj.id for obj in [user, user2]]
+            "members": [obj.id for obj in [user, user2]],
+            "owner" : created_data[0].owner.id
         }
         response = self.auth_put(
             owner, 
             req_data, 
             [created_data[0].id]
         )
-        # print(response.data)
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content)
         updated_data = Organization.objects.get(id=created_data[0].id)
@@ -153,6 +162,7 @@ class TestUpdateOrgView(BaseTestClass):
         
         req_data = {**self.data}
         req_data["members"] = [obj.id for obj in [user, user2]]
+        req_data['owner'] = created_data[0].owner.id
         response = self.auth_put(
             can_access_user,
             req_data, 
@@ -178,3 +188,112 @@ class TestUpdateOrgView(BaseTestClass):
         self.assertEqual(len(mailbox), 1)
         self.assertEqual(user2.email, to_list[0])
         self.assertEqual(mailbox[0].subject, "Notification - You have been add to org updatename")
+    
+    def test_change_owner_validation(self):
+        org_owner = self.create_and_active_user(email="org_owner@gmail.com")
+        new_owner = self.create_and_active_user(email="new_owner#@gma.com", created_by=org_owner)
+        new_owner2 = self.create_and_active_user(email="new_owner2#@gma.com")
+        user = self.create_and_active_user()
+        user.can_be_accessed_by.add(org_owner)
+        orgs_data = [*self.orgs_data]
+        for org_data in orgs_data:
+            org_data["owner"] = org_owner
+        created_org = self.bulk_create_object(Organization, orgs_data)[0]
+        created_org.members.add(user)
+
+        test_cases_data = [
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "name": "test", 
+                   "owner": new_owner2.id,
+                   'description': created_org.description,
+                    "members": self.get_ids_from(created_org.members.all())
+                },
+               "field": "owner",
+               "contain": "user you didn't create or have access to as owner"
+            },
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "name": "test", 
+                   "owner": new_owner.id,
+                   'description': created_org.description,
+                    "members": self.get_ids_from(created_org.members.all())
+                },
+               "field": "members",
+               "contain": "user you didn't create or have access to as member"
+            },
+            {
+               "user": org_owner, 
+               "req_data": {
+                   "name": "test", "owner": uuid.uuid4(),
+                   'description': created_org.description,
+                    "members": self.get_ids_from(created_org.members.all())
+                },
+               "field": "owner",
+            }
+        ]
+
+        for test_data in test_cases_data:
+            current_user = test_data["user"]
+            req_data = test_data['req_data']
+            contain = test_data.get('contain')
+            field = test_data['field']
+            response = self.auth_put(current_user, req_data, [created_org.id])
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            data = self.loads(response.content)
+            errors = data.get(field)
+            self.assertIsInstance(errors, list)
+            if contain:
+                self.assertIn(contain, errors[0])
+        
+    def test_update_data(self):
+        org_owner = self.create_and_active_user(email="org_owner@gmail.com")
+        new_owner = self.create_and_active_user(email="new_owner#@gma.com", created_by=org_owner)
+
+        user = self.create_and_active_user()
+        user.can_be_accessed_by.add(org_owner, new_owner)
+
+        orgs_data = [*self.orgs_data]
+        for org_data in orgs_data:
+            org_data["owner"] = org_owner
+        created_org = self.bulk_create_object(Organization, orgs_data)[0]
+        created_org.members.add(user)
+
+        req_data = {
+            "name": "test", 
+            "owner": new_owner.id,
+            'description': created_org.description,
+            "members": self.get_ids_from(created_org.members.all())
+        }
+
+        response = self.auth_put(org_owner, req_data, [created_org.id])
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
+        self.assertEqual(data.get('name'), "test")
+        self.assertIsNotNone(data.get('description'))
+        self.assertEqual(len(data.get('members')), 1)
+        self.assertIn(str(user.id), data.get('members'))
+        self.assertEqual(data.get('owner'), str(new_owner.id))
+        self.assertEqual(len(self.get_mailbox()), 0)
+    
+    def test_all_field_should_be_include(self):
+        org_owner = self.create_and_active_user(email="org_owner@gmail.com")
+        orgs_data = [*self.orgs_data]
+        for org_data in orgs_data:
+            org_data["owner"] = org_owner
+        created_org = self.bulk_create_object(Organization, orgs_data)[0]
+
+        req_data = {
+            "name": "test", 
+            'description': created_org.description,
+            "members": self.get_ids_from(created_org.members.all())
+        }
+
+        response = self.auth_put(org_owner, req_data, [created_org.id])
+        self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+        data = self.loads(response.content)
+        self.assertIsInstance(data.get('owner'), list)
+        with self.assertRaises(Organization.DoesNotExist):
+            Organization.objects.get(name="test")

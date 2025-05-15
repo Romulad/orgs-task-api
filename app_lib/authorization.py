@@ -1,25 +1,22 @@
 
 
-
 class AuthorizationChecker:
 
     def has_access_to_obj(self, obj, want_access_obj) -> bool:
         want_access_obj_id = want_access_obj.id
-        can_have_access = want_access_obj_id in [
-            have_access.id for have_access in obj.can_be_accessed_by.all()
-        ]
-        is_allowed = True
-        if obj.created_by:
-            is_allowed = (
-                can_have_access or
-                obj.created_by.id == want_access_obj_id or
-                obj.id == want_access_obj_id
-            )
-        else:
-            is_allowed = (
-                can_have_access or
-                obj.id == want_access_obj_id
-            )
+        is_allowed = obj.id == want_access_obj_id
+
+        if hasattr(obj, 'owner') and not is_allowed:
+            is_allowed = getattr(obj.owner, 'id', None) == want_access_obj_id
+            
+        if hasattr(obj, 'created_by') and not is_allowed:
+            is_allowed = getattr(obj.created_by, 'id', None) == want_access_obj_id
+         
+        if hasattr(obj, 'can_be_accessed_by') and not is_allowed:         
+            is_allowed = want_access_obj_id in [
+                have_access.id for have_access in obj.can_be_accessed_by.all()
+            ]
+  
         return is_allowed
     
     def has_access_to_objs(self, objs:list, want_access_obj) -> bool:

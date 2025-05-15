@@ -126,3 +126,4 @@ class TestCreateOrgView(BaseTestClass):
             name='test', owner=own_owner, created_by=user, members__in=[access_free_owner.id]
         )
         self.assertEqual(len(Organization.objects.all()), 1)
+        self.assertEqual(len(self.get_mailbox()), 1)
