@@ -73,19 +73,6 @@ class OrganizationViewset(ModelViewSet):
             ]
         return super().get_permissions()
 
-    def get_queryset_list_response(self, all_queryset, filter_class=None):
-        if filter_class is not None:
-            setattr(self, "filterset_class", filter_class)
-        queryset = self.filter_queryset(all_queryset)
-        
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
     @action(
         detail=False,
         methods=[HTTPMethod.DELETE],
@@ -153,6 +140,19 @@ class DepartmentViewset(ModelViewSet):
         if not org:
             raise Http404("Organization can't be found")
         return org[0]
+    
+    def get_queryset_list_response(self, all_queryset, filter_class=None):
+        if filter_class is not None:
+            setattr(self, "filterset_class", filter_class)
+        queryset = self.filter_queryset(all_queryset)
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, id):
         user = request.user
@@ -165,4 +165,15 @@ class DepartmentViewset(ModelViewSet):
         return Response(
             DepartmentSerializer(created_dep).data,
             status.HTTP_201_CREATED
+        )
+    
+    def list(self, request, id):
+        org = self.get_related_org_data(id)
+        departs = Department.objects.filter(org=org).prefetch_related(
+            "members"
+        ).select_related(
+            "org"
+        )
+        return self.get_queryset_list_response(
+            departs, filter_class=DepartmentDataFilter
         )

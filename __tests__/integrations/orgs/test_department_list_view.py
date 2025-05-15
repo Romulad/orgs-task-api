@@ -1,3 +1,4 @@
+import uuid
 
 from ..base_classe import BaseTestClass
 from organization.models import Organization, Department
@@ -11,7 +12,7 @@ class TestListOrgDepartmentView(BaseTestClass):
     - data is paginated
     - data can be filtered and search throught
     """
-    url_name = "orgs-list-department"
+    url_name = "departments-list"
     departs_data = [
         {
             "name": "my depart 1", "description": "some descr"
@@ -31,7 +32,7 @@ class TestListOrgDepartmentView(BaseTestClass):
     
     def test_user_get_not_found_error(self):
         user = self.create_and_active_user()
-        response = self.auth_get(user, ['fake-org-id'])
+        response = self.auth_get(user, [uuid.uuid4()])
         self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get('detail'))
@@ -53,8 +54,7 @@ class TestListOrgDepartmentView(BaseTestClass):
         depart_data = [*self.departs_data]
         for data in depart_data:
             data["org"] = org
-        departs = self.bulk_create_object(Department, depart_data)
-        org.departments.add(*departs)
+        self.bulk_create_object(Department, depart_data)
         
         for current_user in [owner, user]:
             response = self.auth_get(current_user, [org.id])
@@ -64,7 +64,7 @@ class TestListOrgDepartmentView(BaseTestClass):
             first_data = data[0]
             self.assertIsNotNone(first_data.get('name', None))
             self.assertIsNotNone(first_data.get('description', None))
-            self.assertEqual(first_data.get('org'), str(org.id))
+            self.assertEqual(first_data.get('org').get('id'), str(org.id))
             self.assertIsNotNone(first_data.get('id', None))
             self.assertIsNotNone(first_data.get('members', None))
             self.assertIsNotNone(first_data.get('created_at', None))
@@ -76,7 +76,6 @@ class TestListOrgDepartmentView(BaseTestClass):
         for data in depart_data:
             data["org"] = org
         created_depart = self.bulk_create_object(Department, depart_data)
-        org.departments.add(*created_depart)
         first_depart = created_depart[0]
 
         response = self.auth_get(owner, [org.id], {"ids": [first_depart.id, first_depart.id]})
@@ -86,4 +85,4 @@ class TestListOrgDepartmentView(BaseTestClass):
         first_data = data[0]
         self.assertEqual(first_data.get('name', None), first_depart.name)
         self.assertEqual(first_data.get('description', None), first_depart.description)
-        self.assertEqual(first_data.get('org'), str(org.id))
+        self.assertEqual(first_data.get('org').get('id'), str(org.id))

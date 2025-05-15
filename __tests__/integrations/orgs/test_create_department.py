@@ -19,7 +19,7 @@ class TestCreateDepartmentView(BaseTestClass):
     - test new member add to a department that is not present in the org should be
     automatically added and invitation success email should be sent
     """
-    url_name = "create-department"
+    url_name = "departments-list"
     orgs_data = [
         {
             "name": "my org 1", "description": "some descr"
