@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
 from django.db.transaction import atomic
 from rest_framework import status
+from django.http.response import Http404
 
 from .serializers import (
     OrganizationSerializer,
@@ -22,10 +23,9 @@ from .filters import (
     OrganizationDataFilter,
     DepartmentDataFilter
 )
-from .models import Organization
+from .models import Organization, Department
 from app_lib.permissions import CanAccessedObjectInstance
 from app_lib.global_serializers import BulkDeleteResourceSerializer
-
 
 class OrganizationViewset(ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -58,7 +58,7 @@ class OrganizationViewset(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return super().get_queryset().filter(
-            Q(owner=user) | Q(can_be_accessed_by__in=[user])
+            Q(created_by=user) | Q(owner=user) | Q(can_be_accessed_by__in=[user])
         )
     
     def get_object(self) -> Organization:
@@ -118,56 +118,51 @@ class OrganizationViewset(ModelViewSet):
                 "not_found": not_found
             }
         )
+    
 
-    @action(
-        methods=[HTTPMethod.POST],
-        detail=True,
-        url_name='create-department',
-        url_path='create-department',
-        serializer_class=CreateDepartmentSerializer,
-        permission_classes=[
-            IsAuthenticated, CanAccessedObjectInstance
-        ]
-    )
-    def create_department(self, request:Request, pk=None):
+class DepartmentViewset(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DepartmentSerializer
+    filterset_class = DepartmentDataFilter
+    ordering_fields=['name', "description", "created_at"]
+    queryset = Department.objects.all().select_related(
+        "org"
+    ).prefetch_related(
+        'members'
+    ).order_by("created_at")
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return CreateDepartmentSerializer
+        return super().get_serializer_class()
+    
+    def get_related_org_data(self, org_id):
+        user = self.request.user
+        org = Organization.objects.filter(
+            Q(
+                Q(created_by=user) | 
+                Q(owner=user) | 
+                Q(can_be_accessed_by__in=[user])
+            ),
+            id=org_id,
+        ).prefetch_related(
+            "members", "can_be_accessed_by"
+        ).select_related(
+            "owner", "created_by"
+        )
+        if not org:
+            raise Http404("Organization can't be found")
+        return org[0]
+
+    def create(self, request, id):
         user = request.user
-        org = self.get_object()
+        org = self.get_related_org_data(id)
         serializer = self.get_serializer(
-            data=request.data, context={"user":user, 'org': org}
+            data=request.data, context={"user": user, "org": org}
         )
         serializer.is_valid(raise_exception=True)
-        created = serializer.save()
+        created_dep = serializer.save()
         return Response(
-            self.get_serializer_class()(created).data,
-            status=status.HTTP_201_CREATED
+            DepartmentSerializer(created_dep).data,
+            status.HTTP_201_CREATED
         )
-
-    @action(
-        detail=True,
-        url_name='list-department',
-        url_path='list-department',
-        methods=[HTTPMethod.GET],
-        serializer_class=DepartmentSerializer,
-        permission_classes=[
-            IsAuthenticated, CanAccessedObjectInstance
-        ],
-        filterset_class=None,
-        ordering_fields=['name', "description", "created_at"]
-    )
-    def list_department(self, request:Request, pk=None):
-        org = self.get_object()
-        queryset = org.departments.all()
-        return self.get_queryset_list_response(queryset, DepartmentDataFilter)
-
-    @action(
-        detail=True,
-        url_name='update-department',
-        url_path='update-department',
-        methods=[HTTPMethod.PUT],
-        serializer_class=UpdateDepartmentSerializer,
-        permission_classes=[
-            IsAuthenticated, CanAccessedObjectInstance
-        ],
-    )
-    def update_department(self, request:Request, pk=None):
-        org = self.get_object()

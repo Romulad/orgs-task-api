@@ -97,7 +97,7 @@ class CreateOrganizationSerializer(OrganizationSerializer):
         if not is_allowed:
             raise serializers.ValidationError(
                 {"members": [
-                    _("You can't add a user you didn't create or have access to as member")
+                    _("You or the owner you specified can't add a user you didn't create or have access to as member")
                     ]
                 }
             )
@@ -153,9 +153,6 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
         return value
 
     def validate(self, attrs:dict):
-        from django.test.utils import CaptureQueriesContext
-        from django.db import connection, reset_queries
-
         members = attrs.get('members', None)
         owner = attrs.get('owner', None)
         all_members = self.instance.members.all()
@@ -184,11 +181,11 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
 
 class DepartmentSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
-    created_at = serializers.ReadOnlyField()
-    org = OrganizationSerializer(read_only=True)
     name = serializers.ReadOnlyField()
-    members = UserSerializer(many=True, read_only=True)
     description = serializers.ReadOnlyField()
+    org = OrganizationSerializer(read_only=True)
+    members = UserSerializer(many=True, read_only=True)
+    created_at = serializers.ReadOnlyField()
 
     class Meta:
         model = Department
@@ -213,6 +210,16 @@ class CreateDepartmentSerializer(DepartmentSerializer):
     description = serializers.CharField(
         required=False, allow_blank=True
     )
+    members = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.select_related(
+                "created_by"
+            ).prefetch_related(
+                "can_be_accessed_by"
+            ),
+        pk_field=serializers.UUIDField(),
+        required=False,
+    )
     
     def validate_name(self, value:str):
         org = self.context["org"]
@@ -223,12 +230,35 @@ class CreateDepartmentSerializer(DepartmentSerializer):
             )
         return value
 
+    def validate_members(self, members:list[User]):
+        org = self.context["org"]
+        org_owner = org.owner
+        is_valid = auth_checker.has_access_to_objs(members, org_owner)
+        if not is_valid:
+            raise serializers.ValidationError(
+                _("The org owner need to have full access over members")
+            )
+        return members
+
     def create(self, validated_data:dict):
         org = self.context["org"]
         user = self.context['user']
-        validated_data["org"] = org
+
+        new_members = []
+        if (depart_members := validated_data.get("members", None)):
+            org_members = org.members.all()
+            new_members = [
+                new_member for new_member in depart_members if new_member not in org_members
+            ]
+        
         validated_data["created_by"] = user
+        validated_data["org"] = org
         department = super().create(validated_data)
+
+        if new_members:
+            org.members.add(*new_members)
+            send_invitation_success_email(new_members, org.name)
+
         return department
 
 
