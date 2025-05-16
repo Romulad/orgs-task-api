@@ -11,6 +11,11 @@ urlpatterns = [
         'orgs/<str:id>/departments/', 
         DepartmentViewset.as_view({"post": "create", 'get': "list"}),
         name="departments-list"
+    ),
+    path(
+        'orgs/<str:id>/departments/<str:depart_id>/', 
+        DepartmentViewset.as_view({"get": "retrieve"}),
+        name="departments-detail"
     )
 ]
 

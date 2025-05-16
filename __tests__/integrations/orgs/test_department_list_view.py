@@ -7,7 +7,7 @@ class TestListOrgDepartmentView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user get not found when org doesn't exists
-    - user need to havce access to or is the creator before getting org department
+    - user need to havce access to or is the creator before getting org departments
     - user get department data with needed fields
     - data is paginated
     - data can be filtered and search throught

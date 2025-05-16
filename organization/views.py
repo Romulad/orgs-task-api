@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.transaction import atomic
 from rest_framework import status
 from django.http.response import Http404
+from django.shortcuts import get_object_or_404
 
 from .serializers import (
     OrganizationSerializer,
@@ -122,6 +123,13 @@ class DepartmentViewset(ModelViewSet):
         if self.action == "create":
             return CreateDepartmentSerializer
         return super().get_serializer_class()
+    
+    def get_object(self):
+        org_id = self.kwargs["id"]
+        dep_id = self.kwargs["depart_id"]
+        org = self.get_related_org_data(org_id)
+        depart = get_object_or_404(self.get_queryset(), id=dep_id, org=org)
+        return depart
     
     def get_related_org_data(self, org_id):
         user = self.request.user
