@@ -27,8 +27,9 @@ from .filters import (
 from .models import Organization, Department
 from app_lib.permissions import CanAccessedObjectInstance
 from app_lib.global_serializers import BulkDeleteResourceSerializer
+from app_lib.views import DefaultModelViewSet
 
-class OrganizationViewset(ModelViewSet):
+class OrganizationViewset(DefaultModelViewSet):
     permission_classes=[IsAuthenticated]
     serializer_class=OrganizationSerializer
     filterset_class=OrganizationDataFilter
@@ -81,34 +82,10 @@ class OrganizationViewset(ModelViewSet):
         url_path="bulk-delete"
     )
     def bulk_delete(self, request:Request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        ressource_ids = serializer.data.get('ids')
-        # get ressources
-        to_be_deleted = self.get_queryset().filter(id__in=ressource_ids)
-        if not to_be_deleted:
-            return Response(
-                {"detail": _('Orgs not found')},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        # delete ressource
-        deleted = [str(deleted.id) for deleted in to_be_deleted]
-        not_found = [n_id for n_id in ressource_ids if n_id not in deleted]
-        with atomic():
-            deleted_count = to_be_deleted.update(is_deleted=True)
-
-        if len(ressource_ids) == deleted_count:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(
-            {
-                "deleted": deleted,
-                "not_found": not_found
-            }
-        )
+        return self.perform_bulk_delete(request)
     
 
-class DepartmentViewset(ModelViewSet):
+class DepartmentViewset(DefaultModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = DepartmentSerializer
     filterset_class = DepartmentDataFilter

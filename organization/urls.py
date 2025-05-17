@@ -9,7 +9,11 @@ router.register(r"orgs", OrganizationViewset, "orgs")
 urlpatterns = [
     path(
         'orgs/<str:id>/departments/', 
-        DepartmentViewset.as_view({"post": "create", 'get': "list"}),
+        DepartmentViewset.as_view({
+            "post": "create", 
+            'get': "list",
+            "delete": "bulk_delete"
+        }),
         name="departments-list"
     ),
     path(
