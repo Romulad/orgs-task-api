@@ -123,6 +123,7 @@ class DepartmentViewset(ModelViewSet):
         user = self.request.user
         context = kwargs.get('context', {})
         context["user"] = user
+        kwargs["context"] = context
         if self.action == "create":
             org_id = self.kwargs["id"]
             org = self.get_related_org_data(org_id)
@@ -130,7 +131,6 @@ class DepartmentViewset(ModelViewSet):
             kwargs["context"] = context
             return CreateDepartmentSerializer(*args, **kwargs)
         elif self.action in ["update", "partial_update"]:
-            kwargs["context"] = context
             return UpdateDepartmentSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
     
