@@ -6,6 +6,7 @@ from user.models import AppUser as User
 from user.serializers import UserSerializer
 from app_lib.email import send_invitation_success_email
 from app_lib.authorization import auth_checker
+from app_lib.fn import get_diff_objs
 
 class OrganizationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
@@ -140,6 +141,12 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
         pk_field=serializers.UUIDField(),
         required=True,
     )
+
+    def validate_name(self, value):
+        org_name = self.instance.name
+        if org_name == value:
+            return value
+        return super().validate_name(value)
     
     def validate_owner(self, value:User):
         instance = self.instance
@@ -263,4 +270,113 @@ class CreateDepartmentSerializer(DepartmentSerializer):
 
 
 class UpdateDepartmentSerializer(CreateDepartmentSerializer):
-    pass
+    name = serializers.CharField(
+        required=True,
+        error_messages={
+            "required": _("The name field is required"),
+            "blank": _("Name field can't not be empty")
+        }
+    )
+    description = serializers.CharField(
+        required=True,
+    )
+    org = serializers.PrimaryKeyRelatedField(
+        queryset=Organization.objects.select_related(
+                "created_by", "owner"
+            ).prefetch_related(
+                "can_be_accessed_by", "members"
+            ),
+        pk_field=serializers.UUIDField(),
+        required=True,
+    )
+    members = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.select_related(
+                "created_by"
+            ).prefetch_related(
+                "can_be_accessed_by"
+            ),
+        pk_field=serializers.UUIDField(),
+        required=True,
+    )
+
+    def validate_name(self, value):
+        existed_name = self.instance.name
+        if existed_name == value:
+            return value
+        existed_org = self.instance.org
+        self.context["org"] = existed_org
+        return super().validate_name(value)
+
+    def validate_org(self, org:Organization):
+        existed_org = self.instance.org
+
+        if existed_org.id == org.id:
+            return org
+        
+        # want to change org for the depart, check if he has access to the new org
+        user = self.context["user"]
+        is_allowed = auth_checker.has_access_to_obj(org, user)
+        if not is_allowed:
+            raise serializers.ValidationError(
+                _("You don't have access to the new org")
+            )
+        return org
+    
+    def validate_members(self, members):
+        existed_org = self.instance.org
+        self.context["org"] = existed_org
+        return super().validate_members(members)
+
+    def validate(self, attrs:dict):
+        members_error = serializers.ValidationError({
+            "members": [_("The org owner need to have a full access over department members")]
+        })
+        instance = self.instance
+        org = attrs.get('org', None)
+        members = attrs.get('members', None)
+
+        if org and members and org.id == instance.org.id:
+            return attrs
+        elif org and not members:
+            if not auth_checker.has_access_to_objs(
+                instance.members.all(), org.owner
+            ):
+                raise members_error
+        elif org and members:
+            if not auth_checker.has_access_to_objs(
+                members, org.owner
+            ):
+                raise members_error
+        elif not org and members:
+            if not auth_checker.has_access_to_objs(
+                members, instance.org.owner
+            ):
+                raise members_error
+            
+        return attrs
+
+    def update(self, instance, validated_data):
+        new_member =[]
+        members = validated_data.get("members", None)
+        org = validated_data.get("org", None)
+        if org:
+            if members:
+                new_member = get_diff_objs(members, org.members.all())
+                org.members.add(*new_member) if new_member else ""
+            else:
+                new_member = get_diff_objs(instance.members.all(), org.members.all())
+                org.members.add(*new_member) if new_member else ""
+        else:
+            if members:
+                new_member = get_diff_objs(members, instance.org.members.all())
+                instance.org.members.add(*new_member) if new_member else ""
+
+        updated_data = super().update(instance, validated_data)
+
+        if new_member:
+            send_invitation_success_email(
+                new_member, org.name if org else instance.org.name
+            )
+        
+        return updated_data

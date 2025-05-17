@@ -3,7 +3,7 @@ import uuid
 from ..base_classe import BaseTestClass
 from organization.models import Organization, Department
 
-class TestListOrgDepartmentView(BaseTestClass):
+class TestRetrieveOrgDepartmentView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user get not found when org doesn't exists

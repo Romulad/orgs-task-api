@@ -3,16 +3,21 @@ import uuid
 from ..base_classe import BaseTestClass
 from organization.models import Organization, Department
 
-class TestUpdateOrgDepartmentView(BaseTestClass):
+class TestPartialUpdateOrgDepartmentView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user get not found when org doesn't exists
     - user get not found when department doesn't exists
     - user need to have access to or is the creator of org before updating org department
-    - test all field required should be present or validation error
     - test department name field is unique in the org for new specified name
-    - test user has access to the new specified org
-    - test new specified org owner has full access over department members or error
+    - if new org and not members is specified: 
+        test user has access to the new specified org and 
+        test new org owner has access to all members in the department 
+    - if org and members is specified:
+        test user has access to the org if new
+        test org owner has access to all members specified
+    - if not org and members specified:
+        test if department org owner has full access over specified members
     - test user can update department data to specified data
     - test members in department and not in org are automatically added to org
     and get invitation success notification
@@ -38,13 +43,13 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             data["org"] = self.org
         self.created_departs = self.bulk_create_object(Department, departs_data)
     
-    # def tearDown(self):
-    #     for obj in [*Organization.objects.all(), *Department.objects.all()]:
-    #         obj.hard_delete()       
-
+    def tearDown(self):
+        for obj in [*Organization.objects.all(), *Department.objects.all()]:
+            obj.hard_delete() 
+    
     def test_only_authenticated_user_can_access(self):
         self.evaluate_method_unauthenticated_request(
-            self.HTTP_PUT, ['fake-id', 'fake-id']
+            self.HTTP_PATCH, ['fake-id', 'fake-id']
         )
     
     def test_user_get_not_found_error(self):
@@ -54,7 +59,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         }
 
         for _, url_arg in test_data.items():
-            response = self.auth_put(self.owner_user, {}, url_arg) 
+            response = self.auth_patch(self.owner_user, {}, url_arg) 
             self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
             data = self.loads(response.content)
             self.assertIsNotNone(data.get("detail", None))
@@ -67,7 +72,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             "description": "Some description"
         }
 
-        response = self.auth_put(
+        response = self.auth_patch(
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
@@ -78,35 +83,14 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         with self.assertRaises(Department.DoesNotExist):
             Department.objects.get(name=depart.name, description="Some description")
     
-    def test_all_field_should_be_present(self):
-        depart = self.created_departs[0]
-        req_data = {
-            "name": "updated_name",
-            "org": self.org.id,
-            "members": self.get_ids_from(self.org.members.all())
-        }
-
-        response = self.auth_put(
-            self.owner_user, req_data, [self.org.id, depart.id]
-        )
-        self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
-        data = self.loads(response.content)
-        self.assertIsInstance(data.get("description", None), list)
-        # data don't get updated
-        with self.assertRaises(Department.DoesNotExist):
-            Department.objects.get(name="updated_name")
-    
     def test_departmen_name_validation(self):
         first_depart = self.created_departs[0]
         second_depart = self.created_departs[1]
         req_data = {
             "name":second_depart.name,
-            "description": first_depart.description,
-            "org": self.org.id,
-            "members" : self.get_ids_from(first_depart.members.all())
         }
 
-        response = self.auth_put(
+        response = self.auth_patch(
             self.owner_user, req_data, [self.org.id, first_depart.id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
@@ -122,13 +106,10 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         new_org = Organization.objects.create(name="no-access", owner=other_owner)
 
         req_data = {
-            "name": first_depart.name,
-            "description": first_depart.description,
             "org": new_org.id,
-            "members" : self.get_ids_from(first_depart.members.all())
         }
 
-        response = self.auth_put(
+        response = self.auth_patch(
             self.owner_user, req_data, [self.org.id, first_depart.id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
@@ -139,18 +120,19 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             Department.objects.get(name=first_depart.name, org=new_org)
     
     def test_org_owner_need_to_have_full_access_over_members(self):
-        first_depart = self.created_departs[0]
         free_user = self.create_and_active_user(email="free_user@hnm.com")
+        first_depart = self.created_departs[0]
+        first_depart.members.add(free_user)
+
+        other_owner = self.create_and_active_user(email="other_owner@gmaild.con")
+        new_org = Organization.objects.create(name="new_org_", owner=other_owner)
+        new_org.can_be_accessed_by.add(self.owner_user)
+
         req_data = {
-            "name": first_depart.name,
-            "description": first_depart.description,
-            "org": self.org.id,
-            "members" : self.get_ids_from(
-                first_depart.members.all()
-            ).append(free_user.id)
+            "org": new_org.id
         }
 
-        response = self.auth_put(
+        response = self.auth_patch(
             self.owner_user, req_data, [self.org.id, first_depart.id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
@@ -160,22 +142,74 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         depart = Department.objects.get(name=first_depart.name)
         self.assertEqual(len(depart.members.all()), len(first_depart.members.all()))
     
-    def test_user_can_update_depart_data(self):
+    def test_org_owner_need_to_have_full_access_over_members_specified(self):
+        other_owner = self.create_and_active_user(email="other_owner@gmaild.con")
+        new_org = Organization.objects.create(name="new_org_", owner=other_owner)
+        new_org.can_be_accessed_by.add(self.owner_user)
+
+        depart_member = self.create_and_active_user(
+            email="depart_member@hnm.com", created_by=self.owner_user
+        )
+        depart_member.can_be_accessed_by.add(other_owner)
         first_depart = self.created_departs[0]
+        first_depart.members.add(depart_member)
+
         free_user = self.create_and_active_user(email="free_user@hnm.com")
-        free_user.can_be_accessed_by.add(self.owner_user)
-        self.org.members.add(free_user)
-        new_org = Organization.objects.create(name="no-access", owner=self.owner_user)
+
         req_data = {
-            "name": first_depart.name,
-            "description": first_depart.description,
             "org": new_org.id,
-            "members" : self.get_ids_from(
-                first_depart.members.all()
-            ).append(free_user.id)
+            "members": [depart_member.id, free_user.id]
         }
 
-        response = self.auth_put(
+        response = self.auth_patch(
+            self.owner_user, req_data, [self.org.id, first_depart.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+        data = self.loads(response.content)
+        self.assertIsInstance(data.get("members", None), list)
+        # data don't get updated
+        depart = Department.objects.get(name=first_depart.name)
+        self.assertEqual(len(depart.members.all()), len(first_depart.members.all()))
+    
+    def test_existed_org_owner_has_access_over_all_members_specified(self):
+        depart_member = self.create_and_active_user(
+            email="depart_member@hnm.com", 
+            created_by=self.owner_user
+        )
+        first_depart = self.created_departs[0]
+        first_depart.members.add(depart_member)
+
+        free_user = self.create_and_active_user(email="free_user@hnm.com")
+
+        req_data = {
+            "members": [depart_member.id, free_user.id]
+        }
+
+        response = self.auth_patch(
+            self.owner_user, req_data, [self.org.id, first_depart.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+        data = self.loads(response.content)
+        self.assertIsInstance(data.get("members", None), list)
+        # data don't get updated
+        depart = Department.objects.get(name=first_depart.name)
+        self.assertEqual(len(depart.members.all()), len(first_depart.members.all()))
+    
+    def test_org_owner_can_update_data(self):
+        other_owner = self.create_and_active_user(email="other_owner@gmaild.con")
+        new_org = Organization.objects.create(name="new_org_", owner=other_owner)
+        new_org.can_be_accessed_by.add(self.owner_user)
+
+        simple_user = self.create_and_active_user(email="simple_user@hnm.com")
+        simple_user.can_be_accessed_by.add(other_owner)
+        first_depart = self.created_departs[0]
+        first_depart.members.add(simple_user)
+
+        req_data = {
+            "org": new_org.id
+        }
+
+        response = self.auth_patch(
             self.owner_user, req_data, [self.org.id, first_depart.id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
@@ -185,36 +219,11 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         self.assertEqual(data.get("description"), first_depart.description)
         self.assertIn(len(data.get("org")), str(new_org.id))
         self.assertIn(len(data.get("members")), 1)
-        self.assertIn(str(free_user.id), data.get("members"))
-        # data get updated
+        self.assertIn(str(simple_user.id), data.get("members"))
+        # data is updated
         depart = Department.objects.get(name=first_depart.name)
-        members = depart.members.all()
         self.assertEqual(depart.org.id, new_org.id)
-        self.assertEqual(len(members), 1)
-        self.assertIn(free_user, members)
-
-    def test_update_data_with_no_existed_members_in_org(self):
-        first_depart = self.created_departs[0]
-        simple_user = self.create_and_active_user(email="simple_user@hnm.com")
-        simple_user.can_be_accessed_by.add(self.owner_user)
-        req_data = {
-            "name": first_depart.name,
-            "description": first_depart.description,
-            "org": self.org.id,
-            "members" : self.get_ids_from(
-                first_depart.members.all()
-            ).append(simple_user.id)
-        }
-
-        response = self.auth_put(
-            self.owner_user, req_data, [self.org.id, first_depart.id]
-        )
-        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
-        # new_user is added to org and invitation mail is sent
-        org_data = Organization.objects.get(id=self.org.id, name=self.org.name)
-        members = org_data.members.all()
-        self.assertEqual(len(members), 1)
-        self.assertIn(simple_user, members)
+        # email
         mailbox = self.get_mailbox()
         self.assertEqual(len(mailbox), 1)
         mail_sent = mailbox[0]

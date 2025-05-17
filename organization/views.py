@@ -119,10 +119,20 @@ class DepartmentViewset(ModelViewSet):
         'members'
     ).order_by("created_at")
 
-    def get_serializer_class(self):
+    def get_serializer(self, *args, **kwargs):
+        user = self.request.user
+        context = kwargs.get('context', {})
+        context["user"] = user
         if self.action == "create":
-            return CreateDepartmentSerializer
-        return super().get_serializer_class()
+            org_id = self.kwargs["id"]
+            org = self.get_related_org_data(org_id)
+            context["org"] = org
+            kwargs["context"] = context
+            return CreateDepartmentSerializer(*args, **kwargs)
+        elif self.action in ["update", "partial_update"]:
+            kwargs["context"] = context
+            return UpdateDepartmentSerializer(*args, **kwargs)
+        return super().get_serializer(*args, **kwargs)
     
     def get_object(self):
         org_id = self.kwargs["id"]
@@ -131,6 +141,11 @@ class DepartmentViewset(ModelViewSet):
         depart = get_object_or_404(self.get_queryset(), id=dep_id, org=org)
         return depart
     
+    def get_queryset(self):
+        org_id = self.kwargs["id"]
+        org = self.get_related_org_data(org_id)
+        return super().get_queryset().filter(org=org)
+        
     def get_related_org_data(self, org_id):
         user = self.request.user
         org = Organization.objects.filter(
@@ -148,40 +163,3 @@ class DepartmentViewset(ModelViewSet):
         if not org:
             raise Http404("Organization can't be found")
         return org[0]
-    
-    def get_queryset_list_response(self, all_queryset, filter_class=None):
-        if filter_class is not None:
-            setattr(self, "filterset_class", filter_class)
-        queryset = self.filter_queryset(all_queryset)
-        
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def create(self, request, id):
-        user = request.user
-        org = self.get_related_org_data(id)
-        serializer = self.get_serializer(
-            data=request.data, context={"user": user, "org": org}
-        )
-        serializer.is_valid(raise_exception=True)
-        created_dep = serializer.save()
-        return Response(
-            DepartmentSerializer(created_dep).data,
-            status.HTTP_201_CREATED
-        )
-    
-    def list(self, request, id):
-        org = self.get_related_org_data(id)
-        departs = Department.objects.filter(org=org).prefetch_related(
-            "members"
-        ).select_related(
-            "org"
-        )
-        return self.get_queryset_list_response(
-            departs, filter_class=DepartmentDataFilter
-        )

@@ -116,7 +116,7 @@ class TestUpdateOrgView(BaseTestClass):
         created_data = self.bulk_create_object(Organization, [org_data])
         
         req_data = {
-            **self.data, 
+            **self.data, "name": created_data[0].name,
             "members": [obj.id for obj in [user, user2]],
             "owner" : created_data[0].owner.id
         }
@@ -145,7 +145,7 @@ class TestUpdateOrgView(BaseTestClass):
         self.assertEqual(len(mailbox), 2)
         self.assertIn(user.email, to_list)
         self.assertIn(user2.email, to_list)
-        self.assertEqual(mailbox[0].subject, "Notification - You have been add to org updatename")
+        self.assertEqual(mailbox[0].subject, "Notification - You have been add to org my org 1")
         
     def test_access_allow_user_can_update_data_and_members(self):
         owner = self.create_and_active_user()

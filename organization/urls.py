@@ -14,7 +14,12 @@ urlpatterns = [
     ),
     path(
         'orgs/<str:id>/departments/<str:depart_id>/', 
-        DepartmentViewset.as_view({"get": "retrieve"}),
+        DepartmentViewset.as_view({
+            "get": "retrieve", 
+            "patch": "partial_update",
+            "put": "update",
+            "delete": "destroy"
+        }),
         name="departments-detail"
     )
 ]
