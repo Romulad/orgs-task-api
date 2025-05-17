@@ -38,10 +38,6 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             data["org"] = self.org
         self.created_departs = self.bulk_create_object(Department, departs_data)
     
-    # def tearDown(self):
-    #     for obj in [*Organization.objects.all(), *Department.objects.all()]:
-    #         obj.hard_delete()       
-
     def test_only_authenticated_user_can_access(self):
         self.evaluate_method_unauthenticated_request(
             self.HTTP_PUT, ['fake-id', 'fake-id']
@@ -112,9 +108,8 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
         data = self.loads(response.content)
         self.assertIsInstance(data.get("name", None), list)
-        # data don't get updated
-        with self.assertRaises(Department.DoesNotExist):
-            Department.objects.get(name=second_depart.name)
+        # data don't get updated, we still have one depart with second_depart.name
+        Department.objects.get(name=second_depart.name)
     
     def test_user_cant_update_to_un_accessed_org(self):
         first_depart = self.created_departs[0]
@@ -147,7 +142,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             "org": self.org.id,
             "members" : self.get_ids_from(
                 first_depart.members.all()
-            ).append(free_user.id)
+            ) + [free_user.id]
         }
 
         response = self.auth_put(
@@ -172,7 +167,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             "org": new_org.id,
             "members" : self.get_ids_from(
                 first_depart.members.all()
-            ).append(free_user.id)
+            ) + [free_user.id]
         }
 
         response = self.auth_put(
@@ -183,8 +178,8 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         self.assertEqual(data.get("id"), str(first_depart.id))
         self.assertEqual(data.get("name"), first_depart.name)
         self.assertEqual(data.get("description"), first_depart.description)
-        self.assertIn(len(data.get("org")), str(new_org.id))
-        self.assertIn(len(data.get("members")), 1)
+        self.assertEqual(data.get("org"), str(new_org.id))
+        self.assertEqual(len(data.get("members")), 1)
         self.assertIn(str(free_user.id), data.get("members"))
         # data get updated
         depart = Department.objects.get(name=first_depart.name)
@@ -203,7 +198,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             "org": self.org.id,
             "members" : self.get_ids_from(
                 first_depart.members.all()
-            ).append(simple_user.id)
+            ) + [simple_user.id]
         }
 
         response = self.auth_put(

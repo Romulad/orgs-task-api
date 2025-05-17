@@ -43,10 +43,6 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
             data["org"] = self.org
         self.created_departs = self.bulk_create_object(Department, departs_data)
     
-    def tearDown(self):
-        for obj in [*Organization.objects.all(), *Department.objects.all()]:
-            obj.hard_delete() 
-    
     def test_only_authenticated_user_can_access(self):
         self.evaluate_method_unauthenticated_request(
             self.HTTP_PATCH, ['fake-id', 'fake-id']
@@ -97,8 +93,7 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
         data = self.loads(response.content)
         self.assertIsInstance(data.get("name", None), list)
         # data don't get updated
-        with self.assertRaises(Department.DoesNotExist):
-            Department.objects.get(name=second_depart.name)
+        Department.objects.get(name=second_depart.name)
     
     def test_user_cant_update_to_un_accessed_org(self):
         first_depart = self.created_departs[0]
@@ -217,8 +212,8 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
         self.assertEqual(data.get("id"), str(first_depart.id))
         self.assertEqual(data.get("name"), first_depart.name)
         self.assertEqual(data.get("description"), first_depart.description)
-        self.assertIn(len(data.get("org")), str(new_org.id))
-        self.assertIn(len(data.get("members")), 1)
+        self.assertEqual(data.get("org"), str(new_org.id))
+        self.assertEqual(len(data.get("members")), 1)
         self.assertIn(str(simple_user.id), data.get("members"))
         # data is updated
         depart = Department.objects.get(name=first_depart.name)
