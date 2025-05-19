@@ -1,14 +1,10 @@
 from http import HTTPMethod
 
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
-from django.db.transaction import atomic
-from rest_framework import status
 from django.http.response import Http404
 from django.shortcuts import get_object_or_404
 
@@ -79,7 +75,8 @@ class OrganizationViewset(DefaultModelViewSet):
         detail=False,
         methods=[HTTPMethod.DELETE],
         url_name="bulk-delete",
-        url_path="bulk-delete"
+        url_path="bulk-delete",
+        permission_classes=[IsAuthenticated]
     )
     def bulk_delete(self, request:Request):
         return self.perform_bulk_delete(request)

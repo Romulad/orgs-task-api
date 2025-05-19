@@ -12,7 +12,6 @@ urlpatterns = [
         DepartmentViewset.as_view({
             "post": "create", 
             'get': "list",
-            "delete": "bulk_delete"
         }),
         name="departments-list"
     ),
@@ -25,7 +24,14 @@ urlpatterns = [
             "delete": "destroy"
         }),
         name="departments-detail"
-    )
+    ),
+    path(
+        'orgs/<str:id>/departments/bulk-delete/', 
+        DepartmentViewset.as_view({
+            "delete": "bulk_delete"
+        }),
+        name="departments-delete"
+    ),
 ]
 
 urlpatterns += router.urls

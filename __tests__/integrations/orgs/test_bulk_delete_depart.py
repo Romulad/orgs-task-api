@@ -14,7 +14,7 @@ class TestBulkDeleteOrgDepartMentView(BaseTestClass):
     success response should be sent containing what was deleted and what was not found, 
     - when user make request with not found ids 404 error message 
     """
-    url_name = "departments-list"
+    url_name = "departments-delete"
     departs_data = [
         {
             "name": "my depart 1", "description": "some descr"

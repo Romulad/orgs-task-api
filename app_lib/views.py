@@ -10,10 +10,11 @@ from .global_serializers import BulkDeleteResourceSerializer
 class DefaultModelViewSet(ModelViewSet):
     
     def bulk_delete(self, request:Request, *arg, **kwargs):
-        """Deleted specified ressource ids. Use data return by get_queryset"""
+        """Deleted specified ressource ids. Ids are passed in the request body."""
         return self.perform_bulk_delete(request)
     
     def perform_bulk_delete(self, request:Request):
+        """Perform bulk delete of ressources. Use data returned by get_queryset"""
         serializer = BulkDeleteResourceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ressource_ids = serializer.data.get('ids')
