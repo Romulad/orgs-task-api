@@ -63,7 +63,6 @@ class RegistrationSerializer(serializers.Serializer):
     user_model = get_user_model()
     validated_data.pop('password2')
     validated_data.setdefault('is_active', False)
-    validated_data.setdefault('is_owner', True)
     new_user = user_model.objects.create_user(**validated_data)
     return new_user
 

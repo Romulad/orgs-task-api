@@ -71,16 +71,6 @@ class OrganizationViewset(DefaultModelViewSet):
             ]
         return super().get_permissions()
 
-    @action(
-        detail=False,
-        methods=[HTTPMethod.DELETE],
-        url_name="bulk-delete",
-        url_path="bulk-delete",
-        permission_classes=[IsAuthenticated]
-    )
-    def bulk_delete(self, request:Request):
-        return self.perform_bulk_delete(request)
-    
 
 class DepartmentViewset(DefaultModelViewSet):
     permission_classes = [IsAuthenticated]

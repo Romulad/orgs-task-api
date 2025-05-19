@@ -127,16 +127,6 @@ class TestRegisterView(BaseTestClass):
     user = get_object_or_404(self.user_model, email="validemail@gmail.com")
     self.assertFalse(user.is_active)
   
-  def test_account_creation_success_with_owner_attr(self):
-    response = self.client.post(
-      reverse(self.url_name), 
-      {"email": "validemail@gmail.com", "first_name": "testnme", 
-      "password": "Test1@Password", "password2": "Test1@Password"}
-    )
-    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-    user = get_object_or_404(self.user_model, email="validemail@gmail.com")
-    self.assertTrue(user.is_owner)
-
   def test_account_creation_success_with_email_sent(self):
     response = self.client.post(
       reverse(self.url_name), 

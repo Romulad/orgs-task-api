@@ -30,8 +30,6 @@ class UserDetailSerializer(UserSerializer):
             "email",
             "first_name",
             "last_name",
-            "is_owner",
-            "is_manager",
             "orgs",
             "created_at"
         ]

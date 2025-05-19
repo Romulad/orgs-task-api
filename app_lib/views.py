@@ -1,16 +1,27 @@
+from http import HTTPMethod
+
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.request import Request
 from django.db.transaction import atomic
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils.translation import gettext_lazy as _
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 
 from .global_serializers import BulkDeleteResourceSerializer
 
 class DefaultModelViewSet(ModelViewSet):
-    
-    def bulk_delete(self, request:Request, *arg, **kwargs):
-        """Deleted specified ressource ids. Ids are passed in the request body."""
+
+    @action(
+        detail=False,
+        methods=[HTTPMethod.DELETE],
+        url_name="bulk-delete",
+        url_path="bulk-delete",
+        permission_classes=[IsAuthenticated]
+    )
+    def bulk_delete(self, request:Request, *args, **kwargs):
+        """Deleted specified ressource by ids. Ids are passed in the request body."""
         return self.perform_bulk_delete(request)
     
     def perform_bulk_delete(self, request:Request):

@@ -17,6 +17,13 @@ urlpatterns = [
         name="departments-list"
     ),
     path(
+        'orgs/<str:id>/departments/bulk-delete/',
+        DepartmentViewset.as_view({
+            "delete": "bulk_delete"
+        }),
+        name="departments-delete"
+    ),
+    path(
         'orgs/<str:id>/departments/<str:depart_id>/', 
         DepartmentViewset.as_view({
             "get": "retrieve", 
@@ -25,12 +32,5 @@ urlpatterns = [
             "delete": "destroy"
         }),
         name="departments-detail"
-    ),
-    path(
-        'orgs/<str:id>/departments/bulk-delete/', 
-        DepartmentViewset.as_view({
-            "delete": "bulk_delete"
-        }),
-        name="departments-delete"
     ),
 ]
