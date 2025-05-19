@@ -149,6 +149,9 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Task management system',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SORT_OPERATIONS': False,
+    'SORT_OPERATION_PARAMETERS': False,
+
 }
 
 EMAIL_HOST = 'smtp.gmail.com'

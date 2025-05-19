@@ -7,6 +7,7 @@ router = DefaultRouter()
 router.register(r"orgs", OrganizationViewset, "orgs")
 
 urlpatterns = [
+    *router.urls,
     path(
         'orgs/<str:id>/departments/', 
         DepartmentViewset.as_view({
@@ -33,5 +34,3 @@ urlpatterns = [
         name="departments-delete"
     ),
 ]
-
-urlpatterns += router.urls

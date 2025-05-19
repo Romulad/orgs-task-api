@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import AnonymousUser
 
 from .models import Organization, Department
 from user.models import AppUser as User
@@ -60,7 +61,9 @@ class CreateOrganizationSerializer(OrganizationSerializer):
 
     def __init__(self, instance=None, data=..., **kwargs):
         super().__init__(instance, data, **kwargs)
-        self.fields['owner'].default = self.context.get("user")
+        owner_user = self.context.get("user")
+        if not isinstance(owner_user, AnonymousUser):
+            self.fields['owner'].default = owner_user
 
     def validate_name(self, value:str):
         user = self.context["user"]
