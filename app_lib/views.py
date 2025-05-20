@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from .global_serializers import BulkDeleteResourceSerializer
 
 class DefaultModelViewSet(ModelViewSet):
+    permission_classes=[IsAuthenticated]
 
     @action(
         detail=False,

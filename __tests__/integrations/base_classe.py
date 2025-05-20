@@ -141,7 +141,7 @@ class BaseTestClass(APITestCase):
     error = json.loads(response.content).get('detail', None)
     self.assertIsNotNone(error)
   
-  def get_tokens(self, user: User) -> str:
+  def get_tokens(self, user: User) -> tuple[str] | None:
     tokens = get_tokens_for_user(user)
     access, refresh = tokens.get("access", None), tokens.get("refresh", None)
     return access, refresh if isinstance(tokens, dict) else None
