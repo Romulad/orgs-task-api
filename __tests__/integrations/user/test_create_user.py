@@ -122,7 +122,16 @@ class TestCreateUserView(BaseTestClass):
         self.assertEqual(mail_sent.to[0], "validemail@gmail.com")
         self.assertIn("Invitation to join Platform", mail_sent.subject)
         self.assertRegex(mail_sent.body, "We recommend you to reset your password, please click the link below")
-
+    
+    def test_account_creation_with_created_by_set(self):
+        response = self.auth_post(
+            self.user, 
+            {"email": "validemail@gmail.com", "first_name": "testnme", 
+             "last_name": "my last name"}
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+        self.user_model.objects.get(email="validemail@gmail.com", created_by=self.user)
+    
     def test_account_creation_success_with_response(self):
         response = self.auth_post(
             self.user, 
