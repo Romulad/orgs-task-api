@@ -1,5 +1,3 @@
-import uuid
-
 from ..base_classe import BaseTestClass
 from user.models import AppUser as User
 

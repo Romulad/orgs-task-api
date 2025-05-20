@@ -14,3 +14,6 @@ class UserViewSet(DefaultModelViewSet):
             kwargs["context"] = self.get_serializer_context()
             return CreateUserSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
+
+    def get_queryset(self):
+        return self.get_user_access_allowed_queryset()

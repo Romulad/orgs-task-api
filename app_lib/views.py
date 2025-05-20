@@ -8,6 +8,7 @@ from rest_framework import status
 from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db.models.query import Q
 
 from .global_serializers import BulkDeleteResourceSerializer
 
@@ -51,4 +52,19 @@ class DefaultModelViewSet(ModelViewSet):
                 "deleted": deleted,
                 "not_found": not_found
             }
+        )
+    
+    def get_user_access_allowed_queryset(self, with_owner_filter=False):
+        """Return ressources that the user can access"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        return queryset.filter(
+            Q(id=user.id) |
+            Q(created_by=user) |
+            Q(owner=user) |
+            Q(can_be_accessed_by__in=[user])
+        ) if with_owner_filter else queryset.filter(
+            Q(id=user.id) |
+            Q(created_by=user) |
+            Q(can_be_accessed_by__in=[user])
         )
