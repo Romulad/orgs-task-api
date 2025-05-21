@@ -22,7 +22,12 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at"
         ]
 
-class CreateUserSerializer(UserSerializer):
+
+class UserDetailSerializer(UserSerializer):
+    pass
+
+
+class CreateUserSerializer(UserDetailSerializer):
     email = serializers.EmailField(
         required=True, 
         error_messages={
@@ -75,3 +80,33 @@ class CreateUserSerializer(UserSerializer):
         new_user = user_model.objects.create_user(**validated_data)
         send_account_created_notification(new_user, request)
         return new_user
+
+
+class UpdateUserSerializer(UserDetailSerializer):
+    email = serializers.EmailField(
+        required=True, 
+        error_messages={
+            "required": "You need to provide a valid email address",
+            "invalid": "Your email address is invalid"
+        }
+    )
+    first_name = serializers.CharField(
+        min_length=3, required=True,
+        error_messages={
+            "required": "You need to provide a valid first name",
+            "min_length": "Your first name must contain at least 3 characters"
+        }
+    )
+    last_name = serializers.CharField(
+        required=True, allow_blank=True
+    )
+
+    def validate_email(self, email):
+        if email == self.instance.email:
+            return email
+        user_model = get_user_model()
+        if user_model.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                "A user with that email already exists."
+            )
+        return email

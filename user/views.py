@@ -1,15 +1,21 @@
 from app_lib.views import DefaultModelViewSet
 from .serializers import (
-    UserSerializer,
+    UserDetailSerializer,
     CreateUserSerializer,
+    UpdateUserSerializer
 )
 from .models import AppUser as User
 from .filters import UserDataFilter
 
 class UserViewSet(DefaultModelViewSet):
-    serializer_class = UserSerializer
+    serializer_class = UserDetailSerializer
     queryset = User.objects.all()
     filterset_class= UserDataFilter
+
+    def get_serializer_class(self):
+        if self.action in ["update", "partial_update"]:
+            return UpdateUserSerializer
+        return super().get_serializer_class()
 
     def get_serializer(self, *args, **kwargs):
         if self.action == "create":
