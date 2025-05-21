@@ -14,6 +14,12 @@ from .global_serializers import BulkDeleteResourceSerializer
 
 class DefaultModelViewSet(ModelViewSet):
     permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated]
+    serializer_class=None
+    filterset_class=None
+    ordering_fields=None
+    queryset=None
+
 
     @action(
         detail=False,
@@ -54,17 +60,20 @@ class DefaultModelViewSet(ModelViewSet):
             }
         )
     
-    def get_user_access_allowed_queryset(self, with_owner_filter=False):
+    def get_access_allowed_queryset(
+            self, 
+            with_owner_filter=False,
+            with_self_data=True
+        ):
         """Return ressources that the user can access"""
         queryset = super().get_queryset()
         user = self.request.user
-        return queryset.filter(
-            Q(id=user.id) |
-            Q(created_by=user) |
-            Q(owner=user) |
-            Q(can_be_accessed_by__in=[user])
-        ) if with_owner_filter else queryset.filter(
-            Q(id=user.id) |
-            Q(created_by=user) |
-            Q(can_be_accessed_by__in=[user])
-        )
+        filters = Q(created_by=user) | Q(can_be_accessed_by__in=[user])
+
+        if with_owner_filter:
+            filters = filters | Q(owner=user)
+
+        if with_self_data:
+            filters = filters |  Q(id=user.id)
+
+        return queryset.filter(filters)

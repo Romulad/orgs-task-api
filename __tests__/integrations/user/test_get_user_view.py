@@ -75,6 +75,8 @@ class TestRetrieveUserView(BaseTestClass):
             self.assertEqual(data.get("first_name"), wanted_user.first_name)
             self.assertEqual(data.get("last_name"), wanted_user.last_name)
             self.assertIsNotNone(data.get("created_at", None))
+            with self.assertRaises(KeyError):
+                data["password"]
     
     def test_user_get_his_data(self):
         simple_user = self.create_and_active_user(email="simple_user@gmail.dd.com")

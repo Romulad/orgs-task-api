@@ -1,9 +1,30 @@
-import json
-
 from django_filters import rest_framework as filters
 from django.db.models import Q
 
-class BaseNameDescriptionDateDataFilter(filters.FilterSet):
+
+class CommonFieldsFilter(filters.FilterSet):
+    ids = filters.BaseInFilter(
+        field_name="id",
+        label="Filter by list of id"
+    )
+
+    created = filters.DateTimeFromToRangeFilter(
+        field_name="created_at",
+        label="Date from to",
+    )
+
+
+class SearchThroughFilter(filters.FilterSet):
+    search = filters.CharFilter(
+        method="search_through",
+        label="Search through fields"
+    )
+
+    def search_through(self, queryset, name, value):
+        return queryset
+
+
+class BaseNameDescriptionDateDataFilter(CommonFieldsFilter, SearchThroughFilter):
     name = filters.CharFilter(
         field_name="name", 
         lookup_expr="exact", 
@@ -39,21 +60,6 @@ class BaseNameDescriptionDateDataFilter(filters.FilterSet):
         field_name="description", 
         lookup_expr="endswith", 
         label="Description ends with"
-    )
-
-    created = filters.DateTimeFromToRangeFilter(
-        field_name="created_at",
-        label="Date from to",
-    )
-
-    ids = filters.BaseInFilter(
-        field_name="id",
-        label="Filter by list of id"
-    )
-
-    search = filters.CharFilter(
-        method="search_through",
-        label="Search through fields"
     )
 
     def search_through(self, queryset, name, value):

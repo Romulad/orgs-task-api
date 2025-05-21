@@ -4,10 +4,12 @@ from .serializers import (
     CreateUserSerializer,
 )
 from .models import AppUser as User
+from .filters import UserDataFilter
 
 class UserViewSet(DefaultModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    filterset_class= UserDataFilter
 
     def get_serializer(self, *args, **kwargs):
         if self.action == "create":
@@ -16,4 +18,8 @@ class UserViewSet(DefaultModelViewSet):
         return super().get_serializer(*args, **kwargs)
 
     def get_queryset(self):
-        return self.get_user_access_allowed_queryset()
+        if self.action == "list":
+            return self.get_access_allowed_queryset(
+                with_self_data=False
+            )
+        return self.get_access_allowed_queryset()
