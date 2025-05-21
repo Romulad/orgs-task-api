@@ -1,6 +1,12 @@
 from django.contrib.auth.models import BaseUserManager
 
 class CustomUserManager(BaseUserManager):
+
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            is_deleted=False
+        )
+
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
