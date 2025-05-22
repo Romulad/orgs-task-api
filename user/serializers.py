@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 
 from .models import AppUser
 from app_lib.password import generate_password, validate_password
@@ -110,3 +111,50 @@ class UpdateUserSerializer(UserDetailSerializer):
                 "A user with that email already exists."
             )
         return email
+
+
+class UpdateUserPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(
+        required=True, min_length=8, write_only=True
+    )
+    confirm_new_password = serializers.CharField(
+        required=True, min_length=8, write_only=True
+    )
+    password = serializers.CharField(
+        required=True, min_length=8, write_only=True
+    )
+    
+    def validate_new_password(self, new_password:str):
+        result = validate_password(new_password)
+        if isinstance(result, str):
+            raise serializers.ValidationError(result)
+
+        target_user = self.context["target_user"]
+        if target_user.check_password(new_password):
+            raise serializers.ValidationError(_("You can't reuse the same password"))
+
+        return new_password  
+
+    def validate_password(self, password:str):
+        user = self.context["user"]
+        if not user.check_password(password):
+            raise serializers.ValidationError(_("Invalid password"))
+
+        return password
+
+    def validate(self, attrs):
+        new_password = attrs.get("new_password")
+        confirm_new_password = attrs.get("confirm_new_password")
+        if new_password != confirm_new_password:
+            raise serializers.ValidationError(
+                {"confirm_new_password": [
+                    _("Password mismatch")
+                ]}
+            )
+        return attrs 
+    
+    def update(self, instance, validated_data):
+        new_password = validated_data.get("new_password")
+        instance.set_password(new_password)
+        instance.save()
+        return instance

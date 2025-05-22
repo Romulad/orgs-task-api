@@ -3,6 +3,7 @@ import json
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from rest_framework.response import Response
+from django.test.utils import override_settings
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -12,6 +13,9 @@ from user.models import AppUser as User
 from app_lib.jwt import get_tokens_for_user
 
 
+@override_settings(PASSWORD_HASHERS=[
+    "django.contrib.auth.hashers.MD5PasswordHasher"
+])
 class BaseTestClass(APITestCase):
   """Add common methods needed across test classes"""
   url_name: str

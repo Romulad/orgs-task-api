@@ -3,12 +3,14 @@ from http import HTTPMethod
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 
 from app_lib.views import DefaultModelViewSet
 from .serializers import (
     UserDetailSerializer,
     CreateUserSerializer,
-    UpdateUserSerializer
+    UpdateUserSerializer,
+    UpdateUserPasswordSerializer
 )
 from .models import AppUser as User
 from .filters import UserDataFilter
@@ -47,3 +49,24 @@ class UserViewSet(DefaultModelViewSet):
         return Response(
             UserDetailSerializer(user).data
         )
+
+    @action(
+        detail=True, 
+        methods=[HTTPMethod.POST],
+        permission_classes=[IsAuthenticated],
+        url_name="change-password",
+        url_path="change-password",
+        serializer_class=UpdateUserPasswordSerializer
+    )
+    def change_password(self, request, *args, **kwargs):
+        """Change user password"""
+        user = request.user
+        target_user = self.get_object()
+        context = {"user": user, 'target_user': target_user}
+        serializer = self.get_serializer(
+            target_user, data=request.data, context=context
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        
