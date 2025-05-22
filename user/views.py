@@ -1,3 +1,9 @@
+from http import HTTPMethod
+
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+
 from app_lib.views import DefaultModelViewSet
 from .serializers import (
     UserDetailSerializer,
@@ -29,3 +35,15 @@ class UserViewSet(DefaultModelViewSet):
                 with_self_data=False
             )
         return self.get_access_allowed_queryset()
+
+    @action(
+        detail=False, 
+        methods=[HTTPMethod.GET],
+        permission_classes=[IsAuthenticated],
+    )
+    def me(self, request, *args, **kwargs):
+        """Get the authenticated user data"""
+        user = request.user
+        return Response(
+            UserDetailSerializer(user).data
+        )
