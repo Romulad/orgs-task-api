@@ -16,6 +16,7 @@ from .serializers import (
 from .models import AppUser as User
 from .filters import UserDataFilter
 from app_lib.authorization import auth_checker
+from app_lib.permissions import IsObjectCreatorOrObj
 
 class UserViewSet(DefaultModelViewSet):
     serializer_class = UserDetailSerializer
@@ -39,6 +40,11 @@ class UserViewSet(DefaultModelViewSet):
                 with_self_data=False
             )
         return self.get_access_allowed_queryset()
+    
+    def get_permissions(self):
+        if self.action == "destroy":
+            self.permission_classes = [IsAuthenticated, IsObjectCreatorOrObj]
+        return super().get_permissions()
 
     @action(
         detail=False, 

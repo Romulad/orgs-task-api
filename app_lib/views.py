@@ -77,3 +77,14 @@ class DefaultModelViewSet(ModelViewSet):
             filters = filters |  Q(id=user.id)
 
         return queryset.filter(filters)
+    
+    def get_forbiden_response(self):
+        return Response(
+            {"detail": "You don't have enought permission to perform this action"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    def get_no_content_response(self):
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
