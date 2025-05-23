@@ -8,7 +8,8 @@ class TestAddOwnerToUserObjectView(BaseTestClass):
     - user need to be authenticated
     - user get not found when obj does not exist
     - user without access get not found error
-    - other user with access but not creator or user itself cant update object owners, 403
+    - user with access allowed cant update obj owner, if try 403 error
+    - only creator or user itself cant update object owners
     - validate owner user ids provide:
         - ids should exist
         - user that is making the request should have a full access over owner user specified
@@ -74,7 +75,7 @@ class TestAddOwnerToUserObjectView(BaseTestClass):
 
         test_datas = [
             {},
-            # {"owner_ids": []},
+            {"owner_ids": []},
             {"owner_ids": [uuid.uuid4(), uuid.uuid4()]},
             {"owner_ids": [simple_user.id]}
         ]

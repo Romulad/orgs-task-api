@@ -171,7 +171,8 @@ class ChangeUserOwnerListSerializer(serializers.Serializer):
             ),
         pk_field=serializers.UUIDField(),
         required=True,
-        source="id"
+        source="id",
+        allow_empty=False
     )
 
     def validate_owner_ids(self, users:AppUser):
