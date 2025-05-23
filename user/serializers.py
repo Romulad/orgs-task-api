@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import AppUser
 from app_lib.password import generate_password, validate_password
 from .lib import send_account_created_notification
+from app_lib.authorization import auth_checker
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -157,4 +158,33 @@ class UpdateUserPasswordSerializer(serializers.Serializer):
         new_password = validated_data.get("new_password")
         instance.set_password(new_password)
         instance.save()
+        return instance
+
+
+class ChangeUserOwnerListSerializer(serializers.Serializer):
+    owner_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=AppUser.objects.select_related(
+                "created_by"
+            ).prefetch_related(
+                "can_be_accessed_by"
+            ),
+        pk_field=serializers.UUIDField(),
+        required=True,
+        source="id"
+    )
+
+    def validate_owner_ids(self, users:AppUser):
+        current_user = self.context["user"]
+        
+        is_allowed = auth_checker.has_access_to_objs(users, current_user)
+        if self.instance.id != current_user.id and not is_allowed:
+            raise serializers.ValidationError(_(
+                "You need to have full access over user you specified"
+            ))
+        return users
+
+    def update(self, instance, validated_data):
+        owners = validated_data.get("id")
+        instance.can_be_accessed_by.set(owners)
         return instance

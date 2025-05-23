@@ -10,10 +10,12 @@ from .serializers import (
     UserDetailSerializer,
     CreateUserSerializer,
     UpdateUserSerializer,
-    UpdateUserPasswordSerializer
+    UpdateUserPasswordSerializer,
+    ChangeUserOwnerListSerializer
 )
 from .models import AppUser as User
 from .filters import UserDataFilter
+from app_lib.authorization import auth_checker
 
 class UserViewSet(DefaultModelViewSet):
     serializer_class = UserDetailSerializer
@@ -63,6 +65,33 @@ class UserViewSet(DefaultModelViewSet):
         user = request.user
         target_user = self.get_object()
         context = {"user": user, 'target_user': target_user}
+        serializer = self.get_serializer(
+            target_user, data=request.data, context=context
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=True, 
+        methods=[HTTPMethod.POST],
+        permission_classes=[IsAuthenticated],
+        url_name="change-owners",
+        url_path="change-owners",
+        serializer_class=ChangeUserOwnerListSerializer
+    )
+    def change_owners(self, request, *args, **kwargs):
+        """Only creator or user itself can set new owner users. 
+        _Owner_ is a list of user that have full acccess over the data but can't 
+        add new owner"""
+        user = request.user
+        target_user = self.get_object()
+        if not auth_checker.has_creator_access_on_obj(target_user, user):
+            return Response(
+                {"detail": "You don't have enought permission to perform this action"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        context = {"user": user}
         serializer = self.get_serializer(
             target_user, data=request.data, context=context
         )
