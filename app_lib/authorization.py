@@ -34,5 +34,12 @@ class AuthorizationChecker:
             is_allowed = getattr(obj.created_by, 'id', None) == want_access_obj_id
   
         return is_allowed
+    
+    def has_creator_access_on_objs(self, objs:list, want_access_obj) -> bool:
+        for obj in objs:
+            is_allowed = self.has_creator_access_on_obj(obj, want_access_obj)
+            if not is_allowed:
+                return is_allowed
+        return True
 
 auth_checker = AuthorizationChecker()

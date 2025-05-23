@@ -6,7 +6,7 @@ class TestBulkDeleteUserView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - request data need to be validate
-    - error when user sent request with org ids that contain id he can not delete
+    - error when user sent request with user ids that contain id he can not delete
     - ressources are deleted by marking it as is_delete and success response 204
     - when user make request to delete ressource he has access to and some are not found
     success response should be sent containing what was deleted and what was not found, 
@@ -48,14 +48,19 @@ class TestBulkDeleteUserView(BaseTestClass):
         # ressources still exist
         [User.objects.get(id=user_id) for user_id in user_ids]
     
-    def test_access_allowed_can_delete_ressources(self):
+    def test_access_allowed_cant_delete_ressources(self):
         user = self.create_and_active_user()
-        first_user = self.users[0]
-        first_user.can_be_accessed_by.add(user)
-
+        for created_user in self.users:
+            created_user.can_be_accessed_by.add(user)
+        user_ids = [created.id for created in self.users]
+        response = self.auth_delete(user, {"ids": user_ids})
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
+        # ressources still exist
+        [User.objects.get(id=user_id) for user_id in user_ids]
+    
+    def test_creator_can_delete_user_ressources(self):
         test_datas = [
             {"user": self.owner_user, "ids": [self.users[1].id, self.users[2].id]},
-            {"user": user, "ids": [first_user.id]}
         ]
         
         for test_data in test_datas:

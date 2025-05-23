@@ -37,13 +37,15 @@ class DefaultModelViewSet(ModelViewSet):
         serializer = BulkDeleteResourceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ressource_ids = serializer.data.get('ids')
+
         # get ressources
         to_be_deleted = self.get_queryset().filter(id__in=ressource_ids)
         if not to_be_deleted:
-            return Response(
-                {"detail": _('Ressource not found')},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return self.get_not_found_error()
+        
+        # check for user permission over objects, potentially return a forbiden response
+        self.check_objects_permissions(request, to_be_deleted)
+
         # delete ressources
         deleted = [str(deleted.id) for deleted in to_be_deleted]
         not_found = [n_id for n_id in ressource_ids if n_id not in deleted]
@@ -77,6 +79,20 @@ class DefaultModelViewSet(ModelViewSet):
             filters = filters |  Q(id=user.id)
 
         return queryset.filter(filters)
+
+    def check_objects_permissions(self, request, objs):
+        """
+        Check if the request should be permitted for a set of objects.
+        Raises an appropriate exception if the request is not permitted.
+        """
+        for permission in self.get_permissions():
+            checker = getattr(permission, "has_objects_permission", None)
+            if checker and not checker(request, self, objs):
+                self.permission_denied(
+                    request,
+                    message=getattr(permission, 'message', None),
+                    code=getattr(permission, 'code', None)
+                )
     
     def get_forbiden_response(self):
         return Response(
@@ -87,4 +103,10 @@ class DefaultModelViewSet(ModelViewSet):
     def get_no_content_response(self):
         return Response(
             status=status.HTTP_204_NO_CONTENT
+        )
+    
+    def get_not_found_error(self):
+        return Response(
+            {"detail": _('Ressource not found')},
+            status=status.HTTP_404_NOT_FOUND
         )
