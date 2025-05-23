@@ -23,6 +23,13 @@ urlpatterns = [
         }),
         name="departments-delete"
     ),
+     path(
+        'orgs/<str:id>/departments/<str:depart_id>/change-owners/', 
+        DepartmentViewset.as_view({
+            "post": "change_owners", 
+        }),
+        name="departments-change-owners"
+    ),
     path(
         'orgs/<str:id>/departments/<str:depart_id>/', 
         DepartmentViewset.as_view({

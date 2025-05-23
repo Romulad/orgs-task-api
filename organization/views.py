@@ -2,8 +2,6 @@ from http import HTTPMethod
 
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
-from rest_framework.decorators import action
-from rest_framework.request import Request
 from django.utils.translation import gettext_lazy as _
 from django.http.response import Http404
 from django.shortcuts import get_object_or_404
@@ -21,8 +19,14 @@ from .filters import (
     DepartmentDataFilter
 )
 from .models import Organization, Department
-from app_lib.permissions import CanAccessedObjectInstance
-from app_lib.global_serializers import BulkDeleteResourceSerializer
+from app_lib.permissions import (
+    CanAccessedObjectInstance,
+    IsObjectCreatorOrgCreator
+)
+from app_lib.global_serializers import (
+    BulkDeleteResourceSerializer,
+    ChangeUserOwnerListSerializer
+)
 from app_lib.views import DefaultModelViewSet
 
 class OrganizationViewset(DefaultModelViewSet):
@@ -54,9 +58,8 @@ class OrganizationViewset(DefaultModelViewSet):
         return super().get_serializer(*args, **kwargs)
 
     def get_queryset(self):
-        user = self.request.user
-        return super().get_queryset().filter(
-            Q(created_by=user) | Q(owner=user) | Q(can_be_accessed_by__in=[user])
+        return self.get_access_allowed_queryset(
+            with_owner_filter=True, with_self_data=False
         )
     
     def get_object(self) -> Organization:
@@ -83,6 +86,11 @@ class DepartmentViewset(DefaultModelViewSet):
         'members'
     ).order_by("created_at")
 
+    def get_serializer_class(self):
+        if self.action == "change_owners":
+            return ChangeUserOwnerListSerializer
+        return super().get_serializer_class()
+
     def get_serializer(self, *args, **kwargs):
         user = self.request.user
         context = kwargs.get('context', {})
@@ -103,7 +111,13 @@ class DepartmentViewset(DefaultModelViewSet):
         dep_id = self.kwargs["depart_id"]
         org = self.get_related_org_data(org_id)
         depart = get_object_or_404(self.get_queryset(), id=dep_id, org=org)
+        self.check_object_permissions(self.request, depart)
         return depart
+    
+    def get_permissions(self):
+        if self.action == "change_owners":
+            self.permission_classes = [IsAuthenticated, IsObjectCreatorOrgCreator]
+        return super().get_permissions()
     
     def get_queryset(self):
         org_id = self.kwargs["id"]

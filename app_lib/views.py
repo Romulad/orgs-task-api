@@ -10,7 +10,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
 
-from .global_serializers import BulkDeleteResourceSerializer
+from .global_serializers import (
+    BulkDeleteResourceSerializer,
+    ChangeUserOwnerListSerializer
+)
+from .permissions import IsObjectCreatorOrObj
 
 class DefaultModelViewSet(ModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -19,7 +23,6 @@ class DefaultModelViewSet(ModelViewSet):
     filterset_class=None
     ordering_fields=None
     queryset=None
-
 
     @action(
         detail=False,
@@ -61,6 +64,29 @@ class DefaultModelViewSet(ModelViewSet):
                 "not_found": not_found
             }
         )
+
+    @action(
+        detail=True, 
+        methods=[HTTPMethod.POST],
+        permission_classes=[IsAuthenticated, IsObjectCreatorOrObj],
+        url_name="change-owners",
+        url_path="change-owners",
+        serializer_class=ChangeUserOwnerListSerializer
+    )
+    def change_owners(self, request, *args, **kwargs):
+        """Only creator can set owner users. _Owner_ is a list of user that 
+        have full acccess over the data but can't add new owner user.\n
+        **Only for user data**: User itself can set owner users, owner added by the creator or user itself 
+        can't delete user data"""
+        user = request.user
+        target_obj = self.get_object()
+        context = {"user": user}
+        serializer = self.get_serializer(
+            target_obj, data=request.data, context=context
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
     def get_access_allowed_queryset(
             self, 

@@ -11,11 +11,9 @@ from .serializers import (
     CreateUserSerializer,
     UpdateUserSerializer,
     UpdateUserPasswordSerializer,
-    ChangeUserOwnerListSerializer
 )
 from .models import AppUser as User
 from .filters import UserDataFilter
-from app_lib.authorization import auth_checker
 from app_lib.permissions import IsObjectCreatorOrObj
 
 class UserViewSet(DefaultModelViewSet):
@@ -76,29 +74,4 @@ class UserViewSet(DefaultModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(
-        detail=True, 
-        methods=[HTTPMethod.POST],
-        permission_classes=[IsAuthenticated, IsObjectCreatorOrObj],
-        url_name="change-owners",
-        url_path="change-owners",
-        serializer_class=ChangeUserOwnerListSerializer
-    )
-    def change_owners(self, request, *args, **kwargs):
-        """Only creator or user itself can set new owner users. 
-        _Owner_ is a list of user that have full acccess over the data but can't 
-        add new owner.\n
-        **Note**: Specific to the user object, a owner added by the creator or user itself 
-        can't delete the user data"""
-        user = request.user
-        target_user = self.get_object()
-        context = {"user": user}
-        serializer = self.get_serializer(
-            target_user, data=request.data, context=context
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-        
+        return Response(status=status.HTTP_204_NO_CONTENT) 
