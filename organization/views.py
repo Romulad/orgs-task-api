@@ -1,7 +1,6 @@
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
 from django.utils.translation import gettext_lazy as _
-from django.http.response import Http404
 from django.shortcuts import get_object_or_404
 
 from .serializers import (
@@ -16,7 +15,7 @@ from .filters import (
     OrganizationDataFilter,
     DepartmentDataFilter
 )
-from .models import Organization, Department
+from .models import Organization
 from app_lib.permissions import (
     CanAccessedObjectInstance,
     IsObjectCreatorOrgCreator,
