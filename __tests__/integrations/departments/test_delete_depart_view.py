@@ -8,6 +8,7 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user need to have access to the org or he is the creator
+    - user in the department can_be_accessed_by attr an delete the depart
     - no access allowed user can't delete ressource
     - ressource is deleted by marking it as is_delete and success response
     - user get not found when ressource not found
@@ -43,7 +44,7 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
         first_depart = self.created_departs[0]
 
         response = self.auth_delete(user, {}, [self.org.id, first_depart.id])
-        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         # obj still exists
         self.assertIsNotNone(Department.objects.get(id=first_depart.id))
         
@@ -68,8 +69,24 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
             with self.assertRaises(Department.DoesNotExist):
                 Department.objects.get(id=current_depart.id)
             # obj is still available in the db
-            deleted_org = Department.all_objects.get(id=current_depart.id)
-            self.assertTrue(deleted_org.is_deleted)
+            deleted_depart = Department.all_objects.get(id=current_depart.id)
+            self.assertTrue(deleted_depart.is_deleted)
+    
+    def test_access_allowed_user_on_depart_can_delete_ressource(self):
+        user = self.create_and_active_user()
+        first_depart = self.created_departs[0]
+        first_depart.can_be_accessed_by.add(user)
+
+        response = self.auth_delete(
+            user, {}, [self.org.id, first_depart.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
+        # obj is deleted
+        with self.assertRaises(Department.DoesNotExist):
+            Department.objects.get(id=first_depart.id)
+        # obj is still available in the db
+        deleted_depart = Department.all_objects.get(id=first_depart.id)
+        self.assertTrue(deleted_depart.is_deleted)
     
     def test_user_get_not_found_error(self):
         response = self.auth_delete(self.owner_user, {}, [uuid.uuid4(), uuid.uuid4()])

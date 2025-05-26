@@ -3,6 +3,8 @@
 class AuthorizationChecker:
 
     def has_access_to_obj(self, obj, want_access_obj) -> bool:
+        """Check `want_access_obj` can have access to the object by checking
+        `owner`, `created_by`, `can_be_accessed_by` and `id` attrs on the `obj`"""
         want_access_obj_id = want_access_obj.id
         is_allowed = obj.id == want_access_obj_id
 

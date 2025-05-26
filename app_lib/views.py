@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
+from django.http.response import Http404
 
 from .global_serializers import (
     BulkDeleteResourceSerializer,
@@ -136,3 +137,6 @@ class DefaultModelViewSet(ModelViewSet):
             {"detail": _('Ressource not found')},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+    def raise_not_found_error(self):
+        raise Http404("Ressource can't be found")

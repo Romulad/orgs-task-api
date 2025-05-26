@@ -67,7 +67,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
-        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
         # data don't get updated
@@ -92,7 +92,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         with self.assertRaises(Department.DoesNotExist):
             Department.objects.get(name="updated_name")
     
-    def test_departmen_name_validation(self):
+    def test_department_name_validation(self):
         first_depart = self.created_departs[0]
         second_depart = self.created_departs[1]
         req_data = {
@@ -215,3 +215,24 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         mail_sent = mailbox[0]
         self.assertEqual(mail_sent.to[0], simple_user.email)
         self.assertIn("Notification - You have been add to org", mail_sent.subject)
+    
+    def test_access_allowed_on_depart_can_update_data(self):
+        first_depart = self.created_departs[0]
+        free_user = self.create_and_active_user(email="free_user@hnm.com")
+        first_depart.can_be_accessed_by.add(free_user)
+
+        req_data = {
+            "name": "new_name_never_user",
+            "description": first_depart.description,
+            "org": self.org.id,
+            "members" : self.get_ids_from(
+                first_depart.members.all()
+            )
+        }
+
+        response = self.auth_put(
+            free_user, req_data, [self.org.id, first_depart.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
+        self.assertEqual(data.get("id"), str(first_depart.id))

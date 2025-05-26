@@ -21,7 +21,7 @@ class CanAccessedObjectInstance(DefaultBasePermission):
 
 class IsObjectCreatorOrObj(DefaultBasePermission):
     """ Check if a given user has permission to act on the current object 
-    use `created_by`, and `id` on the object
+    use `created_by`, or `id` on the object
     """
     message = _("You don't have permission to perform this action")
 
@@ -34,7 +34,7 @@ class IsObjectCreatorOrObj(DefaultBasePermission):
 
 class IsObjectCreatorOrgCreator(DefaultBasePermission):
     """ Check if a given user has permission to act on the current object 
-    use `created_by`, `org.created_by` and `id` on the object
+    use `created_by`, `org.created_by` or `id` on the object
     """
     message = _("You don't have permission to perform this action")
 
@@ -44,5 +44,22 @@ class IsObjectCreatorOrgCreator(DefaultBasePermission):
 
         if not is_allowed:
             is_allowed = auth_checker.has_creator_access_on_obj(obj.org, user)
+
+        return is_allowed
+
+
+class CanAccessOrgOrObj(DefaultBasePermission):
+    """ Check if a given user has permission to act on the current object 
+    use `created_by`, `can_be_accessed_by`, `org.owner`, `org.can_be_accessed_by`, 
+    `org.created_by` and `id` on the object.
+    """
+    message = _("You don't have permission to perform this action")
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        is_allowed = auth_checker.has_access_to_obj(obj, user)
+
+        if not is_allowed:
+            is_allowed = auth_checker.has_access_to_obj(obj.org, user)
 
         return is_allowed

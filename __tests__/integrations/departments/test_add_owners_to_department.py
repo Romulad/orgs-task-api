@@ -3,7 +3,7 @@ import uuid
 from ..base_classe import BaseTestClass
 from organization.models import Organization, Department
 
-class TestUpdateOrgDepartmentView(BaseTestClass):
+class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user get not found when obj does not exist, org or depart
@@ -69,7 +69,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
-        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
 

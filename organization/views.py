@@ -1,5 +1,3 @@
-from http import HTTPMethod
-
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
 from django.utils.translation import gettext_lazy as _
@@ -21,13 +19,15 @@ from .filters import (
 from .models import Organization, Department
 from app_lib.permissions import (
     CanAccessedObjectInstance,
-    IsObjectCreatorOrgCreator
+    IsObjectCreatorOrgCreator,
+    CanAccessOrgOrObj
 )
 from app_lib.global_serializers import (
     BulkDeleteResourceSerializer,
     ChangeUserOwnerListSerializer
 )
 from app_lib.views import DefaultModelViewSet
+from app_lib.queryset import queryset_helpers
 
 class OrganizationViewset(DefaultModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -80,11 +80,7 @@ class DepartmentViewset(DefaultModelViewSet):
     serializer_class = DepartmentSerializer
     filterset_class = DepartmentDataFilter
     ordering_fields=['name', "description", "created_at"]
-    queryset = Department.objects.all().select_related(
-        "org"
-    ).prefetch_related(
-        'members'
-    ).order_by("created_at")
+    queryset = queryset_helpers.get_depart_queryset().order_by("created_at")
 
     def get_serializer_class(self):
         if self.action == "change_owners":
@@ -98,7 +94,7 @@ class DepartmentViewset(DefaultModelViewSet):
         kwargs["context"] = context
         if self.action == "create":
             org_id = self.kwargs["id"]
-            org = self.get_related_org_data(org_id)
+            org = self.get_related_org_data_or_404(org_id)
             context["org"] = org
             kwargs["context"] = context
             return CreateDepartmentSerializer(*args, **kwargs)
@@ -109,21 +105,25 @@ class DepartmentViewset(DefaultModelViewSet):
     def get_object(self):
         org_id = self.kwargs["id"]
         dep_id = self.kwargs["depart_id"]
-        org = self.get_related_org_data(org_id)
-        depart = get_object_or_404(self.get_queryset(), id=dep_id, org=org)
+        queryset = queryset_helpers.get_depart_queryset()
+        depart = get_object_or_404(queryset, id=dep_id, org__id=org_id)
         self.check_object_permissions(self.request, depart)
         return depart
     
     def get_permissions(self):
         if self.action == "change_owners":
             self.permission_classes = [IsAuthenticated, IsObjectCreatorOrgCreator]
+        elif self.action in [
+            "retrieve", "update", "partial_update", 'destroy'
+        ]:
+            self.permission_classes = [IsAuthenticated, CanAccessOrgOrObj]
         return super().get_permissions()
     
     def get_queryset(self):
         org_id = self.kwargs["id"]
-        org = self.get_related_org_data(org_id)
+        org = self.get_related_org_data_or_404(org_id)
         return super().get_queryset().filter(org=org)
-        
+
     def get_related_org_data(self, org_id):
         user = self.request.user
         org = Organization.objects.filter(
@@ -138,6 +138,11 @@ class DepartmentViewset(DefaultModelViewSet):
         ).select_related(
             "owner", "created_by"
         )
+        return org[0] if org else None
+    
+    def get_related_org_data_or_404(self, org_id):
+        org = self.get_related_org_data(org_id)
         if not org:
-            raise Http404("Organization can't be found")
-        return org[0]
+            self.raise_not_found_error()
+        return org
+

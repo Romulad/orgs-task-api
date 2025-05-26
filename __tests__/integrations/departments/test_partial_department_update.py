@@ -72,7 +72,7 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
-        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
         # data don't get updated
@@ -224,3 +224,24 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
         mail_sent = mailbox[0]
         self.assertEqual(mail_sent.to[0], simple_user.email)
         self.assertIn("Notification - You have been add to org", mail_sent.subject)
+    
+    def test_access_allowed_on_depart_can_update_data(self):
+        simple_user = self.create_and_active_user(email="simple_user@gmaild.con")
+      
+        first_depart = self.created_departs[0]
+        first_depart.can_be_accessed_by.add(simple_user)
+
+        req_data = {
+            "name": "new_name_never_user"
+        }
+
+        response = self.auth_patch(
+            simple_user, req_data, [self.org.id, first_depart.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
+        self.assertEqual(data.get("id"), str(first_depart.id))
+        self.assertEqual(data.get("name"), 'new_name_never_user')
+        # data is updated
+        depart = Department.objects.get(name="new_name_never_user")
+        self.assertEqual(depart.org.id, self.org.id)
