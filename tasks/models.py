@@ -96,13 +96,13 @@ class Task(AbstractBaseModel):
         help_text=_("Parent task if this is a sub-task"), 
         verbose_name=_("Parent Task")
     )
-    estimated_time = models.DurationField(
+    estimated_duration = models.DurationField(
         blank=True, 
         null=True, 
         help_text=_("Estimated time to complete the task"), 
         verbose_name=_("Estimated Time")
     )
-    actual_time = models.DurationField(
+    actual_duration = models.DurationField(
         blank=True, 
         null=True, 
         help_text=_("Actual time spent on the task"), 

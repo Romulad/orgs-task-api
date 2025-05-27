@@ -17,14 +17,8 @@ from .global_serializers import (
 )
 from .permissions import IsObjectCreatorOrObj
 
-class DefaultModelViewSet(ModelViewSet):
-    permission_classes=[IsAuthenticated]
-    permission_classes=[IsAuthenticated]
-    serializer_class=None
-    filterset_class=None
-    ordering_fields=None
-    queryset=None
 
+class BulkDeleteResourceMixin:
     @action(
         detail=False,
         methods=[HTTPMethod.DELETE],
@@ -66,6 +60,8 @@ class DefaultModelViewSet(ModelViewSet):
             }
         )
 
+
+class ChangeObjectOwnersMixin:
     @action(
         detail=True, 
         methods=[HTTPMethod.POST],
@@ -89,6 +85,15 @@ class DefaultModelViewSet(ModelViewSet):
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
+
+class DefaultModelViewSet(ModelViewSet):
+    """Extends `ModelViewSet` to add common methods needed in the system"""
+    permission_classes=[IsAuthenticated]
+    serializer_class=None
+    filterset_class=None
+    ordering_fields=None
+    queryset=None
+
     def get_access_allowed_queryset(
             self, 
             with_owner_filter=False,
@@ -140,3 +145,12 @@ class DefaultModelViewSet(ModelViewSet):
     
     def raise_not_found_error(self):
         raise Http404("Ressource can't be found")
+
+
+class FullModelViewSet(
+    DefaultModelViewSet, 
+    BulkDeleteResourceMixin, 
+    ChangeObjectOwnersMixin
+):
+    """Add common behavior needed by a typical model in the system"""
+    pass

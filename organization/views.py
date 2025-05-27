@@ -25,10 +25,10 @@ from app_lib.global_serializers import (
     BulkDeleteResourceSerializer,
     ChangeUserOwnerListSerializer
 )
-from app_lib.views import DefaultModelViewSet
+from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 
-class OrganizationViewset(DefaultModelViewSet):
+class OrganizationViewset(FullModelViewSet):
     permission_classes=[IsAuthenticated]
     serializer_class=OrganizationSerializer
     filterset_class=OrganizationDataFilter
@@ -74,7 +74,7 @@ class OrganizationViewset(DefaultModelViewSet):
         return super().get_permissions()
 
 
-class DepartmentViewset(DefaultModelViewSet):
+class DepartmentViewset(FullModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = DepartmentSerializer
     filterset_class = DepartmentDataFilter

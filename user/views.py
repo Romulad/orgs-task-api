@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from app_lib.views import DefaultModelViewSet
+from app_lib.views import FullModelViewSet
 from .serializers import (
     UserDetailSerializer,
     CreateUserSerializer,
@@ -16,7 +16,7 @@ from .models import AppUser as User
 from .filters import UserDataFilter
 from app_lib.permissions import IsObjectCreatorOrObj
 
-class UserViewSet(DefaultModelViewSet):
+class UserViewSet(FullModelViewSet):
     serializer_class = UserDetailSerializer
     queryset = User.objects.all()
     filterset_class= UserDataFilter

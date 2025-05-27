@@ -1,3 +1,5 @@
-from django.shortcuts import render
+from app_lib.views import FullModelViewSet
 
-# Create your views here.
+
+class TaskViewset(FullModelViewSet):
+    pass
