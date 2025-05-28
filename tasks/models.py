@@ -4,37 +4,9 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from organization.models import Organization, Department
-
+from tags.models import Tag
 
 User = settings.AUTH_USER_MODEL
-
-
-class Tag(AbstractBaseModel):
-    name = models.CharField(
-        max_length=300,
-        help_text=_("Name of the tag"),
-        verbose_name=_("Tag Name")
-    )
-    description = models.TextField(
-        blank=True,
-        null=True,
-        help_text=_("Description of the tag"),
-        verbose_name=_("Tag Description")
-    )
-    org = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name="tags",
-        help_text=_("Organization this tag belongs to"),
-        verbose_name=_("Organization")
-    )
-
-    class Meta:
-        unique_together = ('name', 'org')
-
-    def __str__(self):
-        return self.name
-
 
 class Task(AbstractBaseModel):
     class Priority(models.TextChoices):
@@ -108,8 +80,13 @@ class Task(AbstractBaseModel):
         help_text=_("Actual time spent on the task"), 
         verbose_name=_("Actual Time")
     )
+    allow_auto_status_update = models.BooleanField(
+        _("Allowed status update"),
+        help_text=_("Wether to automatically apply status update logic"),
+        default=True,
+    )
     tags = models.ManyToManyField(
-        'Tag', 
+        Tag, 
         blank=True, 
         related_name="tasks", 
         help_text=_("Tags associated with the task"), 
@@ -131,7 +108,11 @@ class Task(AbstractBaseModel):
         help_text=_("Department this task belongs to"),
         verbose_name=_("Department")
     )
+    
+    class Meta:
+        unique_together = ('name', 'org')
 
     def __str__(self):
         return self.name
+
 
