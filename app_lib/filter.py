@@ -8,7 +8,7 @@ class CommonFieldsFilter(filters.FilterSet):
         label="Filter by list of id"
     )
 
-    created = filters.DateTimeFromToRangeFilter(
+    created = filters.IsoDateTimeFromToRangeFilter(
         field_name="created_at",
         label="Date from to",
     )
@@ -71,6 +71,7 @@ class BaseNameDescriptionDateDataFilter(CommonFieldsFilter, SearchThroughFilter)
         )
 
     class Meta:
+        model = None
         fields = [
             "id",
             "name",

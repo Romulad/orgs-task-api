@@ -5,18 +5,18 @@ from rest_framework.test import APIClient, APITestCase
 from rest_framework.response import Response
 from django.test.utils import override_settings
 
-from django.contrib.auth import get_user_model
 from django.core import mail
 from django.urls import reverse
 
 from user.models import AppUser as User
 from app_lib.jwt import get_tokens_for_user
+from .model_helpers import TestModelHelpers
 
 
 @override_settings(PASSWORD_HASHERS=[
     "django.contrib.auth.hashers.MD5PasswordHasher"
 ])
-class BaseTestClass(APITestCase):
+class BaseTestClass(APITestCase, TestModelHelpers):
   """Add common methods needed across test classes"""
   url_name: str
   fake_token = "co43bu-d6272225128184b0b8107dffba6e8564"
@@ -31,40 +31,12 @@ class BaseTestClass(APITestCase):
 
   def __init__(self, methodName = "runTest"):
     super().__init__(methodName)
+    TestModelHelpers.__init__(self)
     self.client = APIClient()
-    self.user_model : User = get_user_model()
     self.status = status
   
   def get_mailbox(self):
     return mail.outbox
-  
-  def create_user(
-      self, 
-      email="myemail@gmail.com", 
-      password="testpassword",
-      **kwargs
-  ) -> User :
-    created_user = self.user_model.objects.create_user(
-      email=email, password=password, is_active=False, **kwargs
-    )
-    return created_user
-
-  def bulk_create_object(self, model, data):
-    created = model.objects.bulk_create([
-        model(**data) for data in data
-    ])
-    return created
-  
-  def create_and_active_user(
-      self, 
-      email="myemail@gmail.com", 
-      password="testpassword",
-      **kwargs
-  ) -> User :
-    created_user = self.create_user(email, password, **kwargs)
-    created_user.is_active = True
-    created_user.save()
-    return created_user
   
   def loads(self, content):
     return json.loads(content)
@@ -149,4 +121,3 @@ class BaseTestClass(APITestCase):
     tokens = get_tokens_for_user(user)
     access, refresh = tokens.get("access", None), tokens.get("refresh", None)
     return access, refresh if isinstance(tokens, dict) else None
-  
