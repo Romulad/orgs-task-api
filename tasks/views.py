@@ -39,6 +39,6 @@ class TaskViewSet(FullModelViewSet):
         return queryset
     
     def get_permissions(self):
-        if self.action == "destroy":
+        if self.action in ["destroy", 'bulk_delete']:
             self.permission_classes = [IsAuthenticated, CanAccessOrgDepartOrObj]
         return super().get_permissions()

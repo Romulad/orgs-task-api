@@ -69,12 +69,8 @@ class CanAccessOrgDepartOrObj(DefaultBasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        is_allowed = auth_checker.has_access_to_obj(obj, user)
-
-        if not is_allowed:
-            is_allowed = auth_checker.has_access_to_obj(obj.org, user)
-
-        if not is_allowed and getattr(obj, "depart", None):
-            is_allowed = auth_checker.has_access_to_obj(obj.depart, user)
-
-        return is_allowed
+        return auth_checker.has_access_to_org_depart_or_obj(obj, user)
+    
+    def has_objects_permission(self, request, view, objs):
+        user = request.user
+        return auth_checker.has_access_to_org_depart_or_obj_on_objs(objs, user)

@@ -43,5 +43,30 @@ class AuthorizationChecker:
             if not is_allowed:
                 return is_allowed
         return True
+    
+    def has_access_to_org_depart_or_obj(self, obj, want_access_obj):
+        """Check if the `want_access_obj` obj has access to the obj
+        org or depart or the obj itself. Org attribute must exist on the obj"""
+
+        is_allowed = self.has_access_to_obj(obj, want_access_obj)
+
+        if not is_allowed:
+            is_allowed = self.has_access_to_obj(obj.org, want_access_obj)
+
+        if not is_allowed and getattr(obj, "depart", None):
+            is_allowed = self.has_access_to_obj(obj.depart, want_access_obj)
+
+        return is_allowed
+
+    def has_access_to_org_depart_or_obj_on_objs(self, objs, want_access_obj):
+        """Check if the `want_access_obj` obj has access to all obj in objs
+        org or depart or the obj itself. Org attribute must exist on the obj"""
+
+        for obj in objs:
+            is_allowed = self.has_access_to_org_depart_or_obj(obj, want_access_obj)
+            if not is_allowed:
+                return is_allowed
+        return True
+
 
 auth_checker = AuthorizationChecker()
