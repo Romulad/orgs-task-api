@@ -9,7 +9,6 @@ from tasks.serializers import (
 )
 from .filters import TaskDataFilter
 
-
 class TaskViewSet(FullModelViewSet):
     serializer_class = TaskSerializer
     queryset = queryset_helpers.get_task_queryset().order_by('created_at')
@@ -36,6 +35,3 @@ class TaskViewSet(FullModelViewSet):
             Q(assigned_to__in=[user])
         )
         return queryset
-
-    def get_object(self):
-        return super().get_object()

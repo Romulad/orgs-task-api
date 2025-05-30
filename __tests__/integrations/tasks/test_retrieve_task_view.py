@@ -12,9 +12,9 @@ class TestRetrieveTaskView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - test user get not found when ressource doesn't exist
-    - test user can only get task when he has access to the org or department or his is part of
+    - test user can only get task when he has access to the task org or department or his is part of
     the user that the task is assigne_to or he is the task creator or he is in the can_be_accessed_by 
-    list on the task object or error
+    list on the task object or 404 error
     - test user with access can get needed data after request
     """
     url_name = "tasks-detail"
