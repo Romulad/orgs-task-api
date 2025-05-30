@@ -62,12 +62,17 @@ class BaseNameDescriptionDateDataFilter(CommonFieldsFilter, SearchThroughFilter)
         label="Description ends with"
     )
 
-    def search_through(self, queryset, name, value):
-        return queryset.filter(
-            Q(name__contains=value) |
+    def get_default_search_queryset(self, value):
+        return (
+            Q(name__contains=value) | 
             Q(name__icontains=value) |
             Q(description__contains=value) |
             Q(description__icontains=value)
+        )
+
+    def search_through(self, queryset, name, value):
+        return queryset.filter(
+            self.get_default_search_queryset(value)
         )
 
     class Meta:

@@ -44,7 +44,7 @@ class TestListTaskView(BaseTestClass):
         )
     
     def test_user_without_access_cant_get_any_ressources(self):
-        new_owner, _ = self.create_new_org()
+        new_owner, _, _ = self.create_new_org()
         response = self.auth_get(new_owner)
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content).get("results")
@@ -62,15 +62,15 @@ class TestListTaskView(BaseTestClass):
             d_ids = [str(obj.id) for obj in self.tasks]
             for result in data:
                 self.assertIn(result["id"], d_ids)
-                self.assertIsNone(result.get("name"))
-                self.assertIsNone(result.get("description"))
-                self.assertIsNone(result.get("created_at"))
-                self.assertIsNone(result.get("due_date"))
-                self.assertIsNone(result.get("allow_auto_status_update"))
-                self.assertIsNone(result.get("actual_duration"))
-                self.assertIsNone(result.get("estimated_duration"))
-                self.assertIsNone(result.get("status"))
-                self.assertIsNone(result.get("priority"))
+                self.assertIsNotNone(result.get("name"))
+                self.assertIsNot(result.get("description", 0), 0)
+                self.assertIsNotNone(result.get("created_at"))
+                self.assertIsNot(result.get("due_date", 0), 0)
+                self.assertIsNotNone(result.get("allow_auto_status_update"))
+                self.assertIsNot(result.get("actual_duration", 0), 0)
+                self.assertIsNot(result.get("estimated_duration", 0), 0)
+                self.assertIsNotNone(result.get("status"))
+                self.assertIsNotNone(result.get("priority"))
     
     def test_depart_creator_access_allowed_get_needed_data(self):
         # create new depart
@@ -140,12 +140,35 @@ class TestListTaskView(BaseTestClass):
         for result in data:
             self.assertIn(result["name"], names)
     
-    # def test_filter_by_(self):
-    #     response = self.auth_get(self.owner_user, query_params={"search": "d"})
-    #     self.assertEqual(response.status_code, self.status.HTTP_200_OK)
-    #     data = self.loads(response.content).get("results")
-    #     self.assertEqual(len(data), 2)
-    #     names = ["second_task", "third_task"]
-    #     for result in data:
-    #         self.assertIn(result["name"], names)
+    def test_filter_by_assigned_to(self):
+        tasks = self.tasks[1:]
+        for task in tasks:
+            task.assigned_to.add(self.simple_user)
+
+        response = self.auth_get(
+            self.owner_user, 
+            query_params={"assigned_to_ids": "%s" % (str(self.simple_user.id))}
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content).get("results")
+        self.assertEqual(len(data), 2)
+        ids = [str(t.id) for t in tasks]
+        for result in data:
+            self.assertIn(result["id"], ids)
+    
+    def test_filter_by_assigned_to_emails(self):
+        tasks = self.tasks[1:]
+        for task in tasks:
+            task.assigned_to.add(self.simple_user)
+
+        response = self.auth_get(
+            self.owner_user, 
+            query_params={"assigned_to_emails": "%s," % (self.simple_user.email)}
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content).get("results")
+        self.assertEqual(len(data), 2)
+        ids = [str(t.id) for t in tasks]
+        for result in data:
+            self.assertIn(result["id"], ids)
     
