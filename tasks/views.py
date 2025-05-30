@@ -8,7 +8,7 @@ from tasks.serializers import (
     TaskDetailSerializer, 
     CreateTaskSerializer
 )
-from app_lib.permissions import IsNotInAssignedToList
+from app_lib.permissions import CanAccessOrgDepartOrObj
 from .filters import TaskDataFilter
 
 class TaskViewSet(FullModelViewSet):
@@ -40,5 +40,5 @@ class TaskViewSet(FullModelViewSet):
     
     def get_permissions(self):
         if self.action == "destroy":
-            self.permission_classes = [IsAuthenticated, IsNotInAssignedToList]
+            self.permission_classes = [IsAuthenticated, CanAccessOrgDepartOrObj]
         return super().get_permissions()

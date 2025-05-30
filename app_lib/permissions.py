@@ -65,8 +65,16 @@ class CanAccessOrgOrObj(DefaultBasePermission):
         return is_allowed
 
 
-class IsNotInAssignedToList(DefaultBasePermission):
-    
+class CanAccessOrgDepartOrObj(DefaultBasePermission):
+
     def has_object_permission(self, request, view, obj):
         user = request.user
-        return not user in obj.assigned_to.all()
+        is_allowed = auth_checker.has_access_to_obj(obj, user)
+
+        if not is_allowed:
+            is_allowed = auth_checker.has_access_to_obj(obj.org, user)
+
+        if not is_allowed and getattr(obj, "depart", None):
+            is_allowed = auth_checker.has_access_to_obj(obj.depart, user)
+
+        return is_allowed

@@ -14,6 +14,7 @@ class TestDeleteTaskView(BaseTestClass):
         - org owners can delete data in their org
         - depart owners can delete data in their department
         - task owners can delete data where they are creator or have access to
+    - test user with assigned_to status but with owner status can still delete task
     - test task is deleted with success response and doesn't exist on objects anymore but available 
     on all_objects with it is_delete set to true
     """
@@ -166,3 +167,19 @@ class TestDeleteTaskView(BaseTestClass):
                 Task.objects.get(id=target_obj.id)
             Task.all_objects.get(id=target_obj.id)
             next_obj += 1
+    
+    def test_assigned_to_user_with_owner_can_delete_data(self):
+        target_task = self.tasks[0]
+        assigned_to = self.create_and_activate_random_user()
+        target_task.assigned_to.add(assigned_to)
+        target_task.created_by = assigned_to
+        target_task.save()
+
+        response = self.auth_delete(
+            assigned_to,
+            {},
+            [target_task.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
+        with self.assertRaises(Task.DoesNotExist):
+            Task.objects.get(id=target_task.id)
