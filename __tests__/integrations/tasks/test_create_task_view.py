@@ -411,6 +411,25 @@ class TestCreateTaskView(BaseTestClass):
         parent_task.refresh_from_db(fields=["status"])
         self.assertEqual(parent_task.status, Task.Status.IN_PROGRESS)
     
+    def test_not_auto_parent_task_status_update_when_no_enabled_by_parent(self):
+        parent_task = self.tasks[0]
+        parent_task.status = Task.Status.COMPLETED
+        parent_task.allow_auto_status_update = False
+        parent_task.save()
+
+        req_data = {
+            "name": "random_task_name",
+            "org": self.org.id,
+            "parent_task": parent_task.id,
+            "status": Task.Status.PENDING
+        }
+        
+        response = self.auth_post(self.owner_user, req_data)
+        self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+        # check parent task status still COMPLETED
+        parent_task.refresh_from_db(fields=["status"])
+        self.assertEqual(parent_task.status, Task.Status.COMPLETED)
+    
     def test_task_creation_with_created_by_field(self):
         req_data = {
             "name": "random_task_name",
