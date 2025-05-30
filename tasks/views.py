@@ -1,4 +1,5 @@
 from django.db.models.query import Q
+from rest_framework.permissions import IsAuthenticated
 
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
@@ -7,6 +8,7 @@ from tasks.serializers import (
     TaskDetailSerializer, 
     CreateTaskSerializer
 )
+from app_lib.permissions import IsNotInAssignedToList
 from .filters import TaskDataFilter
 
 class TaskViewSet(FullModelViewSet):
@@ -35,3 +37,8 @@ class TaskViewSet(FullModelViewSet):
             Q(assigned_to__in=[user])
         )
         return queryset
+    
+    def get_permissions(self):
+        if self.action == "destroy":
+            self.permission_classes = [IsAuthenticated, IsNotInAssignedToList]
+        return super().get_permissions()

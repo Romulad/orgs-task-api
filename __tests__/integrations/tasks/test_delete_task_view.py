@@ -119,6 +119,7 @@ class TestDeleteTaskView(BaseTestClass):
             with self.assertRaises(Task.DoesNotExist):
                 Task.objects.get(id=target_obj.id)
             Task.all_objects.get(id=target_obj.id)
+            next_obj += 1
     
     def test_depart_creator_accessallow_can_delete_data(self):
         depart_creator, depart = self.create_new_depart(self.org)
@@ -141,6 +142,7 @@ class TestDeleteTaskView(BaseTestClass):
             with self.assertRaises(Task.DoesNotExist):
                 Task.objects.get(id=target_obj.id)
             Task.all_objects.get(id=target_obj.id)
+            next_obj += 1
     
     def test_task_creator_accessallow_can_delete_data(self):
         task_creator = self.create_and_activate_random_user()
@@ -163,3 +165,4 @@ class TestDeleteTaskView(BaseTestClass):
             with self.assertRaises(Task.DoesNotExist):
                 Task.objects.get(id=target_obj.id)
             Task.all_objects.get(id=target_obj.id)
+            next_obj += 1
