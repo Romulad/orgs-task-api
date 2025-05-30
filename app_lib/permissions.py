@@ -74,3 +74,22 @@ class CanAccessOrgDepartOrObj(DefaultBasePermission):
     def has_objects_permission(self, request, view, objs):
         user = request.user
         return auth_checker.has_access_to_org_depart_or_obj_on_objs(objs, user)
+
+
+class IsObjectOrOrgOrDepartCreator(DefaultBasePermission):
+    """ Check if a given user has permission to act on the current object 
+    use `created_by` or `org.created_by` or `depart.created_by` or `id` on the object
+    """
+    message = _("You don't have permission to perform this action")
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        is_allowed = auth_checker.has_creator_access_on_obj(obj, user)
+
+        if not is_allowed:
+            is_allowed = auth_checker.has_creator_access_on_obj(obj.org, user)
+        
+        if not is_allowed and getattr(obj, "depart", None):
+            is_allowed = auth_checker.has_creator_access_on_obj(obj.depart, user)
+
+        return is_allowed
