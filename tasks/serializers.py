@@ -149,6 +149,12 @@ class CreateTaskSerializer(TaskDetailSerializer):
         }
     )
 
+    def check_task_name_uniqueness(self, name, org_id):
+        if Task.objects.filter(name=name, org__id=org_id).exists():
+            raise serializers.ValidationError({
+                "name": [_("A task with this name already exists in the organization.")]
+            })
+
     def validate_name(self, value):
         """
         Validate that the task name is unique within the organization.
@@ -159,10 +165,7 @@ class CreateTaskSerializer(TaskDetailSerializer):
                 {"org": [_("This field is required.")]}
             )
         # if org_id is not valid org id, the `org` field on the serializer will raise an error
-        if Task.objects.filter(name=value, org__id=org_id).exists():
-            raise serializers.ValidationError(
-                _("A task with this name already exists in the organization.")
-            )
+        self.check_task_name_uniqueness(value, org_id)
         return value
     
     def validate_org(self, org:Organization):
@@ -192,30 +195,91 @@ class CreateTaskSerializer(TaskDetailSerializer):
         for tag in tags:
             if tag.org.id != org.id:
                 raise serializers.ValidationError(
-                    {"tags": [_("All tags must belong to the same organization as the new task.")]}
+                    {"tags": [_("All tags must belong to the same organization as the task.")]}
                 )
         
         # validate depart if specified
         depart = attrs.get('depart', None)
         if depart and depart.org.id != org.id:
             raise serializers.ValidationError(
-                {"depart": [_("The department must belong to the same organization as the new task.")]}
+                {"depart": [_("The department must belong to the same organization as the task.")]}
             )
 
         return attrs
+
+    def check_and_update_org_members(self, validated_data, org):
+        assigned_to = validated_data.get('assigned_to', [])
+        if assigned_to:
+            new_user = get_diff_objs(assigned_to, org.members.all())
+            org.members.add(*new_user)
     
     def create(self, validated_data):
         org = validated_data['org']
-        assigned_to = validated_data.get('assigned_to', [])
         user = self.context['request'].user
 
         validated_data['created_by'] = user
         task = super().create(validated_data)
         
         # Ensure the user in assigned_to is added to the organization if not already a member
-        if assigned_to:
-            new_user = get_diff_objs(assigned_to, org.members.all())
-            org.members.add(*new_user)
+        self.check_and_update_org_members(validated_data, org)
         
         return task
+
+
+class UpdateTaskSeriliazer(CreateTaskSerializer):
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=queryset_helpers.get_tag_queryset(only_select_related=True),
+        required=True,
+        # allow_null=True,
+        help_text=_("Tags associated with the task"),
+        error_messages={
+            'does_not_exist': _("One or more specified tags do not exist."),
+        }
+    )
+    class Meta(CreateTaskSerializer.Meta):
+        extra_kwargs = {
+            'name': {'required': True, "allow_blank": False, "allow_null": False},
+            'description': {'required': True, "allow_blank": True},
+            'assigned_to': {'required': True, "allow_null": True},
+            'due_date': {'required': True, "allow_null": True},
+            "priority": {'required': True, "allow_blank": False},
+            "status": {'required': True, "allow_blank": False},
+            "estimated_duration": {'required': True, "allow_null": True},
+            "actual_duration": {'required': True, "allow_null": True},
+            # "tags": {'required': True, "allow_null": True},
+            "depart": {'required': True, "allow_null": True},
+            "org": {'required': True, "allow_null": False, "allow_blank": False}
+        }
+    
+    def validate_name(self, value):
+        print('enter')
+        if self.instance.name == value:
+            return value
         
+        org_id = self.initial_data.get('org')
+        if org_id:
+            self.check_task_name_uniqueness(value, org_id)
+        else:
+            self.check_task_name_uniqueness(value, self.instance.org.id)
+
+        return value
+
+    def validate_org(self, org):
+        if self.instance.org.id == org.id:
+            return org
+        return super().validate_org(org)
+
+    def validate(self, attrs):
+        return super().validate(attrs)
+    
+    def update(self, instance, validated_data):
+        updated = super().update(instance, validated_data)
+
+        org = validated_data.get("org")
+        if org:
+            self.check_and_update_org_members(validated_data, org)
+        else:
+            self.check_and_update_org_members(validated_data, instance.org)
+            
+        return updated

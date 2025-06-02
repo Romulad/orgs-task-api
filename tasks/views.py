@@ -6,7 +6,8 @@ from app_lib.queryset import queryset_helpers
 from tasks.serializers import (
     TaskSerializer, 
     TaskDetailSerializer, 
-    CreateTaskSerializer
+    CreateTaskSerializer,
+    UpdateTaskSeriliazer
 )
 from app_lib.permissions import CanAccessOrgDepartOrObj, IsObjectOrOrgOrDepartCreator
 from .filters import TaskDataFilter
@@ -22,6 +23,8 @@ class TaskViewSet(FullModelViewSet):
             return TaskDetailSerializer
         elif self.action == "create":
             return CreateTaskSerializer
+        elif self.action in ["update", "partial_update"]:
+            return UpdateTaskSeriliazer
         return super().get_serializer_class()
     
     def get_queryset(self):
@@ -39,7 +42,9 @@ class TaskViewSet(FullModelViewSet):
         return queryset
     
     def get_permissions(self):
-        if self.action in ["destroy", 'bulk_delete']:
+        if self.action in [
+            "destroy", 'bulk_delete', "update", "partial_update"
+        ]:
             self.permission_classes = [IsAuthenticated, CanAccessOrgDepartOrObj]
         elif self.action == "change_owners":
             self.permission_classes = [IsAuthenticated, IsObjectOrOrgOrDepartCreator]

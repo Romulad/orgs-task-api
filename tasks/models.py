@@ -72,7 +72,7 @@ class Task(AbstractBaseModel):
         verbose_name=_("Actual Time")
     )
     tags = models.ManyToManyField(
-        Tag, 
+        Tag,
         blank=True, 
         related_name="tasks", 
         help_text=_("Tags associated with the task"), 
