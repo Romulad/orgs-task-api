@@ -59,15 +59,6 @@ class Task(AbstractBaseModel):
         help_text=_("Current status of the task"), 
         verbose_name=_("Status")
     )
-    parent_task = models.ForeignKey(
-        'self', 
-        on_delete=models.CASCADE, 
-        null=True, 
-        blank=True, 
-        related_name="sub_tasks",
-        help_text=_("Parent task if this is a sub-task"), 
-        verbose_name=_("Parent Task")
-    )
     estimated_duration = models.DurationField(
         blank=True, 
         null=True, 

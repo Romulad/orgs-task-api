@@ -22,10 +22,6 @@ class TestCreateTaskView(BaseTestClass):
         - test `due_date` is properly validate if included
         - test user can not choose different `priority` value
         - test user can not choose different `status` value
-        - test `parent_task` validation if specified:
-            - validate `parent_task` obj really existed
-            - validate `parent_task` obj has the same org as the new task been created
-            - validate `parent_task` obj depart is in the same org as the new task been created
         - test `estimated_duration` if specified can only accept valida data
         - test `actual_duration` if specified can only accept valid data
         - test `allowed_status_update` if specified can only accept valid data
@@ -37,12 +33,6 @@ class TestCreateTaskView(BaseTestClass):
             - test depart exist first
             - test the depart specified and the task been created has the same org
     - test assigned_to get automatically added to org members if not existed by default
-    - test when task is created with `parent_task` specified and if parent task allowed:
-        - if the new task is created with no completed status (IN_PROGRESS or PENDING), 
-        check if the parent task has completed or cancelled status and change it to IN_PROGRESS status
-        - if the new task is created with completed or canceled status, check all other child task 
-        and if completed (not IN_PROGRESS or PENDING) mark the parent as completed only if it has 
-        IN_PROGRESS or PENDING status
     - test task is created with created_by field set to the user creating the task
     - test task is successfully created with needed data and needed response is returned
     """
@@ -164,48 +154,6 @@ class TestCreateTaskView(BaseTestClass):
         self.assertIsInstance(errors, list)
         self.assert_task_number()
     
-    def test_parent_task_validation(self):
-        parent_task = self.tasks[0]
-        parent_task.org = self.another_org
-        parent_task.save()
-
-        parent_task2 = self.tasks[1]
-        parent_task2.depart = Department.objects.create(
-            name="another_org_parent_depart", 
-            org=self.another_org, 
-        )
-        parent_task2.save()
-
-        test_datas = [
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": "invalid-id"
-            },
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": uuid.uuid4()
-            },
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": parent_task.id
-            },
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": parent_task2.id
-            },
-        ]
-
-        for req_data in test_datas:
-            response = self.auth_post(self.owner_user, req_data)
-            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
-            errors = self.loads(response.content).get('parent_task')
-            self.assertIsInstance(errors, list)
-            self.assert_task_number()
-    
     def test_estimated_duration_validation(self):
         req_data = {
             "name": "random_task_name",
@@ -308,128 +256,6 @@ class TestCreateTaskView(BaseTestClass):
             ).exists()
         )
     
-    def test_auto_parent_task_status_update_with_no_completed_task(self):
-        parent_task = self.tasks[0]
-        parent_task.status = Task.Status.COMPLETED
-        parent_task.save()
-
-        parent_task2 = self.tasks[0]
-        parent_task2.status = Task.Status.CANCELLED
-        parent_task2.save()
-
-        test_data = [
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": parent_task.id,
-            },
-            {
-                "name": "random_task_name2",
-                "org": self.org.id,
-                "parent_task": parent_task2.id,
-            }
-        ]
-        for req_data in test_data:
-            response = self.auth_post(self.owner_user, req_data)
-            self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
-        self.assert_task_number(5)
-        # Check if the parent task status is updated to IN_PROGRESS
-        parent_task.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task.status, Task.Status.IN_PROGRESS)
-        parent_task2.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task2.status, Task.Status.IN_PROGRESS)
-    
-    def test_auto_parent_task_status_update_with_completed_task(self):
-        parent_task = self.tasks[0]
-        parent_task.status = Task.Status.IN_PROGRESS
-        parent_task.save()
-
-        parent_task2 = self.tasks[1]
-        parent_task2.status = Task.Status.PENDING
-        parent_task2.save()
-
-        parent_task3 = self.tasks[2]
-        parent_task3.status = Task.Status.CANCELLED
-        parent_task3.save()
-
-        test_data = [
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": parent_task.id,
-                "status": Task.Status.COMPLETED
-            },
-            {
-                "name": "random_task_name2",
-                "org": self.org.id,
-                "parent_task": parent_task2.id,
-                "status": Task.Status.CANCELLED
-            },
-            {
-                "name": "random_task_name3",
-                "org": self.org.id,
-                "parent_task": parent_task3.id,
-                "status": Task.Status.COMPLETED
-            },
-        ]
-        for req_data in test_data:
-            response = self.auth_post(self.owner_user, req_data)
-            self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
-        self.assert_task_number(6)
-        # Check if the parent task status is updated to COMPLETED or remains as CANCELLED
-        parent_task.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task.status, Task.Status.COMPLETED)
-        parent_task2.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task2.status, Task.Status.COMPLETED)
-        parent_task3.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task3.status, Task.Status.CANCELLED)
-    
-    def test_auto_parent_task_status_update_with_completed_task_and_in_progress_child(self):
-        parent_task = self.tasks[0]
-        parent_task.status = Task.Status.IN_PROGRESS
-        parent_task.save()
-
-        test_data = [
-            {
-                "name": "random_task_name",
-                "org": self.org.id,
-                "parent_task": parent_task.id,
-                "status": Task.Status.PENDING
-            },
-            {
-                "name": "random_task_name2",
-                "org": self.org.id,
-                "parent_task": parent_task.id,
-                "status": Task.Status.COMPLETED
-            },
-        ]
-        for req_data in test_data:
-            response = self.auth_post(self.owner_user, req_data)
-            self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
-        # check parent task status still IN_PROGRESS
-        # because there is still a child task with IN_PROGRESS status
-        parent_task.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task.status, Task.Status.IN_PROGRESS)
-    
-    def test_not_auto_parent_task_status_update_when_no_enabled_by_parent(self):
-        parent_task = self.tasks[0]
-        parent_task.status = Task.Status.COMPLETED
-        parent_task.allow_auto_status_update = False
-        parent_task.save()
-
-        req_data = {
-            "name": "random_task_name",
-            "org": self.org.id,
-            "parent_task": parent_task.id,
-            "status": Task.Status.PENDING
-        }
-        
-        response = self.auth_post(self.owner_user, req_data)
-        self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
-        # check parent task status still COMPLETED
-        parent_task.refresh_from_db(fields=["status"])
-        self.assertEqual(parent_task.status, Task.Status.COMPLETED)
-    
     def test_task_creation_with_created_by_field(self):
         req_data = {
             "name": "random_task_name",
@@ -442,7 +268,6 @@ class TestCreateTaskView(BaseTestClass):
     
     def test_task_creation_with_all_valid_data(self):
         self.simple_user.can_be_accessed_by.add(self.owner_user)
-        parent_task = self.tasks[0]
         tag = Tag.objects.create(
             name="test_tag",
             org=self.org, 
@@ -462,7 +287,6 @@ class TestCreateTaskView(BaseTestClass):
             "estimated_duration": "01:00:00",
             "actual_duration": "00:30:00",
             "allow_auto_status_update": True,
-            "parent_task": parent_task.id,
             "tags": [tag.id],
             "depart": depart.id
         }
@@ -479,7 +303,6 @@ class TestCreateTaskView(BaseTestClass):
         self.assertEqual(response_data["estimated_duration"], req_data["estimated_duration"])
         self.assertEqual(response_data["actual_duration"], req_data["actual_duration"])
         self.assertEqual(response_data["allow_auto_status_update"], req_data["allow_auto_status_update"])
-        self.assertEqual(response_data["parent_task"], str(parent_task.id))
         self.assertEqual(response_data["tags"][0], str(tag.id))
         self.assertEqual(response_data["depart"], str(depart.id))
         # assert task is created

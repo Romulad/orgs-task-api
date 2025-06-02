@@ -42,7 +42,6 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class TaskDetailSerializer(TaskSerializer):
     assigned_to = UserSerializer(many=True, read_only=True)
-    parent_task = TaskSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     depart = DepartmentSerializer(read_only=True)
     org = OrganizationSerializer(read_only=True)
@@ -52,7 +51,6 @@ class TaskDetailSerializer(TaskSerializer):
         fields = [
             *TaskSerializer.Meta.fields,
             "assigned_to",
-            "parent_task",
             "tags",
             "depart",
             "org",
@@ -142,15 +140,6 @@ class CreateTaskSerializer(TaskDetailSerializer):
             'does_not_exist': _("One or more specified tags do not exist."),
         }
     )
-    parent_task = serializers.PrimaryKeyRelatedField(
-        queryset=queryset_helpers.get_task_queryset(only_select_related=True),
-        required=False,
-        allow_null=True,
-        help_text=_("Parent task if this is a sub-task"),
-        error_messages={
-            'does_not_exist': _("The specified parent task does not exist."),
-        }
-    )
     depart = serializers.PrimaryKeyRelatedField(
         queryset=queryset_helpers.get_depart_queryset(only_select_related=True),
         required=False,
@@ -207,20 +196,7 @@ class CreateTaskSerializer(TaskDetailSerializer):
                 raise serializers.ValidationError(
                     {"assigned_to": [_("The organization owner must have full access to the assigned users.")]}
                 )
-        
-        # validate parent_task org is same as the new task org
-        parent_task = attrs.get('parent_task', None)
-        if parent_task:
-            if parent_task.org.id != org.id:
-                raise serializers.ValidationError(
-                    {"parent_task": [_("The parent task must belong to the same organization as the new task.")]}
-                )
-            # validate parent_task depart if exists
-            if parent_task.depart and parent_task.depart.org.id != org.id:
-                raise serializers.ValidationError(
-                    {"parent_task": [_("The parent task's department must belong to the same organization as the new task.")]}
-                )
-        
+            
         # validate tags if specified
         tags = attrs.get('tags', [])
         for tag in tags:
@@ -241,32 +217,10 @@ class CreateTaskSerializer(TaskDetailSerializer):
     def create(self, validated_data):
         org = validated_data['org']
         assigned_to = validated_data.get('assigned_to', [])
-        parent_task = validated_data.get('parent_task', None)
         user = self.context['request'].user
 
         validated_data['created_by'] = user
         task = super().create(validated_data)
-
-        # ensure parent_task status is updated if needed
-        if parent_task and parent_task.allow_auto_status_update:
-            task_status = validated_data.get('status')
-            if (
-                task_status in [Task.Status.IN_PROGRESS, Task.Status.PENDING] and 
-                parent_task.status in [Task.Status.CANCELLED, Task.Status.COMPLETED]
-            ):
-                parent_task.status = Task.Status.IN_PROGRESS
-                parent_task.save()
-            elif (
-                task_status in [Task.Status.COMPLETED, Task.Status.CANCELLED] and
-                parent_task.status in [Task.Status.IN_PROGRESS, Task.Status.PENDING]
-            ):
-                no_completed_count = Task.objects.filter(
-                    parent_task=parent_task, 
-                    status__in=[Task.Status.IN_PROGRESS, Task.Status.PENDING]
-                ).count()
-                if not no_completed_count:
-                    parent_task.status = Task.Status.COMPLETED
-                    parent_task.save()
         
         # Ensure the user in assigned_to is added to the organization if not already a member
         if assigned_to:

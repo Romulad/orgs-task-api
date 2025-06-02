@@ -49,7 +49,6 @@ class  TaskDataFilter(BaseFilter):
             "due_date",
             'priority',
             'status',
-            'parent_task',
             'estimated_duration',
             'actual_duration',
             'allow_auto_status_update',

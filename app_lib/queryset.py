@@ -103,7 +103,7 @@ class ModelDefaultQuerysets:
             default=default,
             only_select_related=only_select_related,
             only_prefetch_related=only_prefetch_related,
-            select_related_fields=["org", "depart", "parent_task", "created_by"],
+            select_related_fields=["org", "depart", "created_by"],
             prefetch_related_fields=["assigned_to", "tags", "can_be_accessed_by"]
         )
     
