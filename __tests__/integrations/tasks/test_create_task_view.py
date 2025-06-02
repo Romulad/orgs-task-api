@@ -24,7 +24,6 @@ class TestCreateTaskView(BaseTestClass):
         - test user can not choose different `status` value
         - test `estimated_duration` if specified can only accept valida data
         - test `actual_duration` if specified can only accept valid data
-        - test `allowed_status_update` if specified can only accept valid data
         - test `tags` validation if specified:
             - test the tags should exist
             - test the tags specified for the task should all belongs to the task org, we should
@@ -286,7 +285,6 @@ class TestCreateTaskView(BaseTestClass):
             "status": Task.Status.PENDING,
             "estimated_duration": "01:00:00",
             "actual_duration": "00:30:00",
-            "allow_auto_status_update": True,
             "tags": [tag.id],
             "depart": depart.id
         }
@@ -302,7 +300,6 @@ class TestCreateTaskView(BaseTestClass):
         self.assertEqual(response_data["status"], req_data["status"])
         self.assertEqual(response_data["estimated_duration"], req_data["estimated_duration"])
         self.assertEqual(response_data["actual_duration"], req_data["actual_duration"])
-        self.assertEqual(response_data["allow_auto_status_update"], req_data["allow_auto_status_update"])
         self.assertEqual(response_data["tags"][0], str(tag.id))
         self.assertEqual(response_data["depart"], str(depart.id))
         # assert task is created

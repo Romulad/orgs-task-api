@@ -23,7 +23,6 @@ class TaskSerializer(serializers.ModelSerializer):
             "status",
             'estimated_duration',
             "actual_duration",
-            "allow_auto_status_update",
             "created_at",
         ]
         extra_kwargs = {
@@ -35,7 +34,6 @@ class TaskSerializer(serializers.ModelSerializer):
             'status': {'read_only': True},
             'estimated_duration': {'read_only': True},
             'actual_duration': {'read_only': True},
-            'allow_auto_status_update': {'read_only': True},
             'created_at': {'read_only': True},
         }
 
@@ -120,14 +118,6 @@ class CreateTaskSerializer(TaskDetailSerializer):
         help_text=_("Actual time spent on the task"),
         error_messages={
             'invalid': _("Enter a valid duration."),
-        }
-    )
-    allow_auto_status_update = serializers.BooleanField(
-        default=True,
-        required=False,
-        help_text=_("Allow automatic status updates based on sub-task progress"),
-        error_messages={
-            'invalid': _("Enter a valid boolean value."),
         }
     )
     tags = serializers.PrimaryKeyRelatedField(

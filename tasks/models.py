@@ -71,11 +71,6 @@ class Task(AbstractBaseModel):
         help_text=_("Actual time spent on the task"), 
         verbose_name=_("Actual Time")
     )
-    allow_auto_status_update = models.BooleanField(
-        _("Allowed status update"),
-        help_text=_("Wether to automatically apply status update logic"),
-        default=True,
-    )
     tags = models.ManyToManyField(
         Tag, 
         blank=True, 

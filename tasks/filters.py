@@ -51,7 +51,6 @@ class  TaskDataFilter(BaseFilter):
             'status',
             'estimated_duration',
             'actual_duration',
-            'allow_auto_status_update',
             'org',
             "depart"
         ]

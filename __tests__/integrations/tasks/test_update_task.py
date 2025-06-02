@@ -6,23 +6,30 @@ class TestUpdateTaskView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - test user get not found when ressource doesn't exist
-    - test simple user, other depart owner, other can't udpdate the task obj
-    - test all field is required
+    - other depart owners, other user can't udpdate the task obj - 404
+    - test assigned to users that has access to the task and it not owner can't update task - 403
+    - test all field is required - 400
     - test data validation: (here an instance already exist)
         - test `name` field validation:
             - `name` should be unique with the org if new and other than the existed instance name
         - test `org` validation:
             - if org id different from existing intance org id test the user updating the ressource 
-            should have a full access over the new org
-        - test `assigned_to` if include in data:
-            - `assigned_to` should b valid user ids
+            has a full access over the new org
+        - test `assigned_to`:
+            - `assigned_to` can be empty but should be include
+            - `assigned_to` should be valid user ids
             - the org owner should have a full access over `assigned_to`
-        - test `due_date` is properly validate if included
-        - test user can not choose different `priority` value
-        - test user can not choose different `status` value
-        - test `estimated_duration` if specified can only accept valida data
-        - test `actual_duration` if specified can only accept valid data
-        - test `allowed_status_update` if specified can only accept valid data
+        - test `due_date`:
+            - can be empty but should be include
+            - test it is properly validate if not null
+        - test `priority`:
+            - `priority` field should be include
+            - user can not choose different `priority` value
+        - test `status`:
+            - `status` field should be include
+            - user can not choose different `status` value
+        - test `estimated_duration` can only accept valida data
+        - test `actual_duration` can only accept valid data
         - test `tags` validation if specified:
             - test the tags should exist
             - test the tags specified for the task should all belongs to the task org, we should

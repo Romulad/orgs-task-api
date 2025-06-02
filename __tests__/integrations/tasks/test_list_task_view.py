@@ -66,7 +66,6 @@ class TestListTaskView(BaseTestClass):
                 self.assertIsNot(result.get("description", 0), 0)
                 self.assertIsNotNone(result.get("created_at"))
                 self.assertIsNot(result.get("due_date", 0), 0)
-                self.assertIsNotNone(result.get("allow_auto_status_update"))
                 self.assertIsNot(result.get("actual_duration", 0), 0)
                 self.assertIsNot(result.get("estimated_duration", 0), 0)
                 self.assertIsNotNone(result.get("status"))
