@@ -9,6 +9,7 @@ from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
 from tags.serializers import TagSerializer
 from app_lib.fn import get_diff_objs
+from app_lib.fields import ManyPrimaryKeyRelatedField, DefaultDateTimeField
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -76,17 +77,11 @@ class CreateTaskSerializer(TaskDetailSerializer):
         required=False,
         allow_null=True,
         help_text=_("Users assigned to this task"),
-        error_messages={
-            'does_not_exist': _("One or more specified users do not exist."),
-        }
     )
     due_date = serializers.DateTimeField(
         required=False,
         allow_null=True,
         help_text=_("Deadline for the task"),
-        error_messages={
-            'invalid': _("Enter a valid date/time."),
-        }
     )
     priority = serializers.ChoiceField(
         choices=Task.Priority,
@@ -151,9 +146,9 @@ class CreateTaskSerializer(TaskDetailSerializer):
 
     def check_task_name_uniqueness(self, name, org_id):
         if Task.objects.filter(name=name, org__id=org_id).exists():
-            raise serializers.ValidationError({
-                "name": [_("A task with this name already exists in the organization.")]
-            })
+            raise serializers.ValidationError(
+                _("A task with this name already exists in the organization.")
+            )
 
     def validate_name(self, value):
         """
@@ -204,11 +199,10 @@ class CreateTaskSerializer(TaskDetailSerializer):
             raise serializers.ValidationError(
                 {"depart": [_("The department must belong to the same organization as the task.")]}
             )
-
+        
         return attrs
 
-    def check_and_update_org_members(self, validated_data, org):
-        assigned_to = validated_data.get('assigned_to', [])
+    def check_and_update_org_members(self, assigned_to, org):
         if assigned_to:
             new_user = get_diff_objs(assigned_to, org.members.all())
             org.members.add(*new_user)
@@ -216,44 +210,83 @@ class CreateTaskSerializer(TaskDetailSerializer):
     def create(self, validated_data):
         org = validated_data['org']
         user = self.context['request'].user
+        assigned_to = validated_data.get('assigned_to', [])
 
         validated_data['created_by'] = user
         task = super().create(validated_data)
         
         # Ensure the user in assigned_to is added to the organization if not already a member
-        self.check_and_update_org_members(validated_data, org)
+        self.check_and_update_org_members(assigned_to, org)
         
         return task
 
 
 class UpdateTaskSeriliazer(CreateTaskSerializer):
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=queryset_helpers.get_tag_queryset(only_select_related=True),
+    description = serializers.CharField(
         required=True,
-        # allow_null=True,
-        help_text=_("Tags associated with the task"),
+        allow_blank=True,
+        help_text=_("Detailed description of the task"),
+    )
+    assigned_to = ManyPrimaryKeyRelatedField(
+        required=True,
+        queryset=queryset_helpers.get_user_queryset(),
+        allow_empty=True,
+        help_text=_("Users assigned to this task"),
+    )
+    due_date = DefaultDateTimeField(
+        required=True,
+        allow_blank=True,
+        help_text=_("Deadline for the task"),
+    )
+    priority = serializers.ChoiceField(
+        choices=Task.Priority,
+        required=True,
+        help_text=_("Priority level of the task"),
         error_messages={
-            'does_not_exist': _("One or more specified tags do not exist."),
+            'invalid_choice': _("Invalid priority choice."),
         }
     )
-    class Meta(CreateTaskSerializer.Meta):
-        extra_kwargs = {
-            'name': {'required': True, "allow_blank": False, "allow_null": False},
-            'description': {'required': True, "allow_blank": True},
-            'assigned_to': {'required': True, "allow_null": True},
-            'due_date': {'required': True, "allow_null": True},
-            "priority": {'required': True, "allow_blank": False},
-            "status": {'required': True, "allow_blank": False},
-            "estimated_duration": {'required': True, "allow_null": True},
-            "actual_duration": {'required': True, "allow_null": True},
-            # "tags": {'required': True, "allow_null": True},
-            "depart": {'required': True, "allow_null": True},
-            "org": {'required': True, "allow_null": False, "allow_blank": False}
+    status = serializers.ChoiceField(
+        choices=Task.Status,
+        required=True,
+        help_text=_("Current status of the task"),
+        error_messages={
+            'invalid_choice': _("Invalid status choice."),
         }
+    )
+    estimated_duration = serializers.DurationField(
+        required=True,
+        allow_null=True,
+        help_text=_("Estimated time to complete the task"),
+        error_messages={
+            'invalid': _("Enter a valid duration."),
+        }
+    )
+    actual_duration = serializers.DurationField(
+        required=True,
+        allow_null=True,
+        help_text=_("Actual time spent on the task"),
+        error_messages={
+            'invalid': _("Enter a valid duration."),
+        }
+    )
+    tags = ManyPrimaryKeyRelatedField(
+        queryset=queryset_helpers.get_tag_queryset(only_select_related=True),
+        required=True,
+        allow_empty=True,
+        help_text=_("Tags associated with the task"),
+    )
+    depart = serializers.PrimaryKeyRelatedField(
+        queryset=queryset_helpers.get_depart_queryset(only_select_related=True),
+        required=True,
+        allow_null=True,
+        help_text=_("Department to which the task belongs"),
+        error_messages={
+            'does_not_exist': _("The specified department does not exist."),
+        }
+    )
     
     def validate_name(self, value):
-        print('enter')
         if self.instance.name == value:
             return value
         
@@ -269,17 +302,18 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
         if self.instance.org.id == org.id:
             return org
         return super().validate_org(org)
-
+    
     def validate(self, attrs):
         return super().validate(attrs)
     
     def update(self, instance, validated_data):
+        assigned_to = validated_data.get('assigned_to', [])
         updated = super().update(instance, validated_data)
 
         org = validated_data.get("org")
         if org:
-            self.check_and_update_org_members(validated_data, org)
+            self.check_and_update_org_members(assigned_to, org)
         else:
-            self.check_and_update_org_members(validated_data, instance.org)
+            self.check_and_update_org_members(assigned_to, instance.org)
             
         return updated

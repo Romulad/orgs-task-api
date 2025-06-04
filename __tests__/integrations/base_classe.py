@@ -62,7 +62,7 @@ class BaseTestClass(APITestCase, TestModelHelpers):
 
   def put(self, data: dict, args: list | None = None, headers=None) -> Response:
     path = reverse(self.url_name, args=args)
-    return self.client.put(path, data, headers=headers)
+    return self.client.put(path, data, headers=headers, format="json")
   
   def patch(self, data: dict, args: list | None = None, headers=None) -> Response:
     path = reverse(self.url_name, args=args)

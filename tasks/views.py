@@ -38,7 +38,7 @@ class TaskViewSet(FullModelViewSet):
             Q(created_by=user) |
             Q(can_be_accessed_by__in=[user]) |
             Q(assigned_to__in=[user])
-        )
+        ).distinct()
         return queryset
     
     def get_permissions(self):

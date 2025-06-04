@@ -111,7 +111,7 @@ class ModelDefaultQuerysets:
         self,
         default=False,
         only_select_related=False,
-            only_prefetch_related=False
+        only_prefetch_related=False
     ):
         return self.get_model_queryset(
             Tag,

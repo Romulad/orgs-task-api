@@ -1,0 +1,64 @@
+from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
+
+
+class AllowBlankMixin:
+
+    def __init__(self, allow_blank=False, **kwargs):
+        self.allow_blank = allow_blank
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, value):
+        try:
+            data = super().to_internal_value(value)
+        except serializers.ValidationError:
+            if self.allow_blank and value == '':
+                return None
+            raise
+        except Exception:
+            raise
+        else:
+            return data
+        
+
+class ManyPrimaryKeyRelatedField(serializers.RelatedField):
+    default_error_messages = {
+        'required': _('This field is required.'),
+        'does_not_exist': _('Invalid value "{pk_value}" - object does not exist.'),
+        'empty': _("This list may not be empty."),
+    }
+
+    def __init__(self, serializer_class=None, allow_empty=False, **kwargs):
+        self.serializer_class = serializer_class
+        self.allow_empty = allow_empty
+        super().__init__(**kwargs)
+
+    def to_representation(self, data):
+        serializer_class = self.serializer_class
+        data = data.all()
+        if serializer_class is not None:
+            return [serializer_class(value).data for value in data]
+        return [value.pk for value in data]
+
+    def to_internal_value(self, pk_values:list):
+        if not isinstance(pk_values, list):
+            raise TypeError
+        
+        if not self.allow_empty and len(pk_values) == 0:
+            self.fail("empty")
+        
+        if len(pk_values) == 0:
+            return []
+            
+        data = list(self.get_queryset().filter(pk__in=pk_values))
+        found_ids = [str(obj.pk) for obj in data]
+        
+        for pk_value in pk_values:
+            if pk_value not in found_ids:
+                self.fail('does_not_exist', pk_value=pk_value)
+        
+        return data
+
+
+class DefaultDateTimeField(AllowBlankMixin, serializers.DateTimeField):
+    pass
