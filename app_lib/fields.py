@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-
+from rest_framework.utils import html
 
 class AllowBlankMixin:
 
@@ -23,6 +23,7 @@ class AllowBlankMixin:
 
 class ManyPrimaryKeyRelatedField(serializers.RelatedField):
     default_error_messages = {
+        'invalid': _('Invalid data'),
         'required': _('This field is required.'),
         'does_not_exist': _('Invalid value "{pk_value}" - object does not exist.'),
         'empty': _("This list may not be empty."),
@@ -42,7 +43,7 @@ class ManyPrimaryKeyRelatedField(serializers.RelatedField):
 
     def to_internal_value(self, pk_values:list):
         if not isinstance(pk_values, list):
-            raise TypeError
+            self.fail('invalid')
         
         if not self.allow_empty and len(pk_values) == 0:
             self.fail("empty")
@@ -58,6 +59,19 @@ class ManyPrimaryKeyRelatedField(serializers.RelatedField):
                 self.fail('does_not_exist', pk_value=pk_value)
         
         return data
+
+    def get_value(self, dictionary):
+        # We override the default field access in order to support
+        # lists in HTML forms.
+        if html.is_html_input(dictionary):
+            # Don't return [] if the update is partial
+            if self.field_name not in dictionary:
+                if getattr(self.root, 'partial', False):
+                    return serializers.empty
+            return dictionary.getlist(self.field_name)
+
+        return dictionary.get(self.field_name, serializers.empty)
+
 
 
 class DefaultDateTimeField(AllowBlankMixin, serializers.DateTimeField):

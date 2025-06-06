@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from organization.models import Department, Organization
 from user.models import AppUser as User
 from tags.models import Tag
+from tasks.models import Task
 
 class TestModelHelpers:
 
@@ -80,3 +81,13 @@ class TestModelHelpers:
             created_by = new_creator
         )
         return new_creator, tag
+    
+    def create_new_task(self, org, name=None, creator=None):
+        """Create a new task in `org`, return creator and task objects"""
+        new_creator = self.create_and_activate_random_user() if not creator else creator
+        task = Task.objects.create(
+            name = str(uuid.uuid4()) if not name else name,
+            org = org,
+            created_by = new_creator
+        )
+        return new_creator, task

@@ -11,6 +11,7 @@ from tags.serializers import TagSerializer
 from app_lib.fn import get_diff_objs
 from app_lib.fields import ManyPrimaryKeyRelatedField, DefaultDateTimeField
 
+# TODO: nested db fectch for create and update view
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,7 +58,80 @@ class TaskDetailSerializer(TaskSerializer):
         ]
 
 
-class CreateTaskSerializer(TaskDetailSerializer):
+class CreateUpdateTaskBaseSerializer(TaskDetailSerializer):
+
+    def check_task_name_already_exists_in_org(self, name, org_id):
+        return Task.objects.filter(name=name, org__id=org_id).exists()
+    
+    def check_org_owner_has_access_to_assigned_to(self, assigned_to, org):
+        return auth_checker.has_access_to_objs(assigned_to, org.owner)
+
+    def check_tags_belong_to_org(self, tags, org):
+        for tag in tags:
+            if tag.org.id != org.id:
+                return False
+        return True
+
+    def check_depart_belongs_to_org(self, depart, org):
+        if depart and depart.org.id != org.id:
+            return False
+        return True
+
+    def check_task_name_uniqueness(self, name, org_id):
+        if self.check_task_name_already_exists_in_org(name, org_id):
+            raise serializers.ValidationError(
+                _("A task with this name already exists in the organization.")
+            )
+
+    def validate_tags_user_depart_against_org(self, attrs):
+        org = attrs.get('org')
+
+        # validate assigned_to users
+        assigned_to = attrs.get('assigned_to', [])
+        if assigned_to:
+            error_obj = serializers.ValidationError(
+                {"assigned_to": [_("The organization owner must have full access to the assigned users.")]}
+            )
+            if org and not self.check_org_owner_has_access_to_assigned_to(assigned_to, org):
+                raise error_obj
+            elif not org and self.partial and not self.check_org_owner_has_access_to_assigned_to(
+                assigned_to, self.instance.org
+            ):
+                raise error_obj
+            
+        # validate tags if specified
+        tags = attrs.get('tags', [])
+        if tags:
+            error_obj =  serializers.ValidationError(
+                {"tags": [_("All tags must belong to the same organization as the task.")]}
+            )
+            if org and not self.check_tags_belong_to_org(tags, org):
+                raise error_obj
+            elif not org and self.partial and not self.check_tags_belong_to_org(
+                tags, self.instance.org
+            ):
+                raise error_obj
+        
+        # validate depart if specified
+        depart = attrs.get('depart', None)
+        if depart:
+            error_obj =  serializers.ValidationError(
+                {"depart": [_("The department must belong to the same organization as the task.")]}
+            )
+            if org and not self.check_depart_belongs_to_org(depart, org):
+                raise error_obj
+            elif not org and self.partial and not self.check_depart_belongs_to_org(
+                depart, self.instance.org
+            ):
+                raise error_obj
+    
+    def check_and_update_org_members(self, assigned_to, org):
+        if assigned_to:
+            new_user = get_diff_objs(assigned_to, org.members.all())
+            org.members.add(*new_user)
+
+
+class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
     name = serializers.CharField(
         required=True,
         help_text=_("Name of the task"),
@@ -144,12 +218,6 @@ class CreateTaskSerializer(TaskDetailSerializer):
         }
     )
 
-    def check_task_name_uniqueness(self, name, org_id):
-        if Task.objects.filter(name=name, org__id=org_id).exists():
-            raise serializers.ValidationError(
-                _("A task with this name already exists in the organization.")
-            )
-
     def validate_name(self, value):
         """
         Validate that the task name is unique within the organization.
@@ -175,37 +243,8 @@ class CreateTaskSerializer(TaskDetailSerializer):
         return org
 
     def validate(self, attrs:dict):
-        org = attrs.get('org')
-
-        # validate assigned_to users
-        assigned_to = attrs.get('assigned_to', [])
-        if assigned_to:
-            if not auth_checker.has_access_to_objs(assigned_to, org.owner):
-                raise serializers.ValidationError(
-                    {"assigned_to": [_("The organization owner must have full access to the assigned users.")]}
-                )
-            
-        # validate tags if specified
-        tags = attrs.get('tags', [])
-        for tag in tags:
-            if tag.org.id != org.id:
-                raise serializers.ValidationError(
-                    {"tags": [_("All tags must belong to the same organization as the task.")]}
-                )
-        
-        # validate depart if specified
-        depart = attrs.get('depart', None)
-        if depart and depart.org.id != org.id:
-            raise serializers.ValidationError(
-                {"depart": [_("The department must belong to the same organization as the task.")]}
-            )
-        
+        self.validate_tags_user_depart_against_org(attrs)
         return attrs
-
-    def check_and_update_org_members(self, assigned_to, org):
-        if assigned_to:
-            new_user = get_diff_objs(assigned_to, org.members.all())
-            org.members.add(*new_user)
     
     def create(self, validated_data):
         org = validated_data['org']
@@ -301,7 +340,46 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
     def validate_org(self, org):
         if self.instance.org.id == org.id:
             return org
-        return super().validate_org(org)
+        
+        super().validate_org(org)
+
+        # validation against existing instance assigned_to, depart, tags, name.
+        # only apply validation on existing instance attrs when the given field 
+        # is not specified in the request data otherwise let the validation to the
+        # field validation step
+        messages = []
+        instance = self.instance
+
+        if not self.initial_data.get("name", None):
+            if self.check_task_name_already_exists_in_org(
+                instance.name, org.id
+            ):
+                messages.append(_("A task with the same name already exist in the organization"))
+        
+        if not self.initial_data.get("assigned_to", None):
+            if not self.check_org_owner_has_access_to_assigned_to(
+                instance.assigned_to.all(), org
+            ):
+                messages.append(
+                    _('The organization owner should have a full access over user assigned to the task')
+                )
+
+        if not self.initial_data.get("tags", None):
+            if not self.check_tags_belong_to_org(instance.tags.all(), org):
+                messages.append(
+                    _('All tags should belong to the organization')
+                )
+        
+        if not self.initial_data.get("depart", None):
+            if not self.check_depart_belongs_to_org(instance.depart, org):
+                messages.append(
+                    _('The department should belongs to the organization')
+                )
+        
+        if messages:
+            raise serializers.ValidationError(messages)
+        
+        return org
     
     def validate(self, attrs):
         return super().validate(attrs)
