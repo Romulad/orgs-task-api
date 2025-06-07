@@ -58,7 +58,7 @@ class TestRetrieveOrgDepartmentView(BaseTestClass):
         first_depart = self.bulk_create_object(Department, departs_data)[0]
 
         response = self.auth_get(no_access_allowed, [org.id, first_depart.id])
-        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
     
@@ -84,20 +84,27 @@ class TestRetrieveOrgDepartmentView(BaseTestClass):
             self.assertEqual(len(data.get('members')), 0)
     
     def test_access_allowed_user_on_depart_can_get_data(self):
-        user = self.create_and_active_user()
-        org = Organization.objects.create(name="test", owner=user)
+        depart_creator = self.create_and_activate_random_user()
+        can_access_depart = self.create_and_active_user()
+        _, _, org = self.create_new_org()
         departs_data = [*self.departs_data]
         for data in departs_data:
             data["org"] = org
         first_depart = self.bulk_create_object(Department, departs_data)[0]
-        first_depart.can_be_accessed_by.add(user)
+        first_depart.created_by = depart_creator
+        first_depart.save()
+        first_depart.can_be_accessed_by.add(can_access_depart)
 
-        response = self.auth_get(user, [org.id, first_depart.id])
-        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
-        data = self.loads(response.content)
-        self.assertEqual(data.get('id'), str(first_depart.id))
-        self.assertEqual(data.get('name'), first_depart.name)
-        self.assertEqual(data.get('description'), first_depart.description)
-        self.assertEqual(data.get('org').get('id'), str(org.id))
-        self.assertIsInstance(data.get('members'), list)
-        self.assertEqual(len(data.get('members')), 0)
+        for user in [
+            depart_creator,
+            can_access_depart
+        ]:
+            response = self.auth_get(user, [org.id, first_depart.id])
+            self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+            data = self.loads(response.content)
+            self.assertEqual(data.get('id'), str(first_depart.id))
+            self.assertEqual(data.get('name'), first_depart.name)
+            self.assertEqual(data.get('description'), first_depart.description)
+            self.assertEqual(data.get('org').get('id'), str(org.id))
+            self.assertIsInstance(data.get('members'), list)
+            self.assertEqual(len(data.get('members')), 0)

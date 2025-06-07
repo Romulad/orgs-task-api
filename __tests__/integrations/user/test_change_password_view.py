@@ -52,7 +52,6 @@ class TestChangeUserPasswordView(BaseTestClass):
                 "validPaasword1_" if password is None else password
             )
         )
-    
 
     def test_only_authenticated_user_can_access(self):
         self.evaluate_method_unauthenticated_request(

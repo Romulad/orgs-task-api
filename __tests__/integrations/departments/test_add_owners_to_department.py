@@ -69,7 +69,7 @@ class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
-        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
 
@@ -132,7 +132,7 @@ class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):
     def test_creator_can_change_obj_access_user(self):
         target_depart = self.created_departs[0]
 
-        # for org creator, he ha access to this user
+        # for org creator, he has access to this user
         simple_user = self.create_and_active_user(email="simple_user@gnaiold.com")
         simple_user.can_be_accessed_by.add(self.owner_user)
 

@@ -74,6 +74,37 @@ class TestBulkDeleteOrgDepartMentView(BaseTestClass):
                     Department.objects.get(id=r_id)
                 deleted = Department.all_objects.get(id=r_id)
                 self.assertTrue(deleted.is_deleted)
+    
+    def test_access_allowed_on_depart_only_can_delete_ressources(self):
+        depart_creator = self.create_and_activate_random_user()
+        can_access_user = self.create_and_activate_random_user()
+
+        for depart in self.created_departs:
+            depart.created_by = depart_creator
+            depart.save()
+            depart.can_be_accessed_by.add(can_access_user)
+
+        test_datas = [
+            {
+                "user": depart_creator, 
+                "depart_ids": [self.created_departs[1].id, self.created_departs[2].id]
+            },
+            {
+                "user": can_access_user, 
+                "depart_ids": [self.created_departs[0].id]
+            }
+        ]
+        
+        for test_data in test_datas:
+            req_ids = test_data["depart_ids"]
+            response = self.auth_delete(test_data["user"], {"ids": req_ids}, [self.org.id])
+            self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
+            # ressources are deleted but with is_deleted attr
+            for r_id in req_ids:
+                with self.assertRaises(Department.DoesNotExist):
+                    Department.objects.get(id=r_id)
+                deleted = Department.all_objects.get(id=r_id)
+                self.assertTrue(deleted.is_deleted)
 
     def test_access_allowed_can_delete_ressources_with_not_found(self):
         req_ids = [created.id for created in self.created_departs] + [uuid.uuid4(), uuid.uuid4()]

@@ -44,7 +44,7 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
         first_depart = self.created_departs[0]
 
         response = self.auth_delete(user, {}, [self.org.id, first_depart.id])
-        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
         # obj still exists
         self.assertIsNotNone(Department.objects.get(id=first_depart.id))
         
@@ -73,20 +73,28 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
             self.assertTrue(deleted_depart.is_deleted)
     
     def test_access_allowed_user_on_depart_can_delete_ressource(self):
-        user = self.create_and_active_user()
-        first_depart = self.created_departs[0]
-        first_depart.can_be_accessed_by.add(user)
+        depart_creator = self.create_and_activate_random_user()
+        access_allowed_user = self.create_and_active_user()
 
-        response = self.auth_delete(
-            user, {}, [self.org.id, first_depart.id]
-        )
-        self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
-        # obj is deleted
-        with self.assertRaises(Department.DoesNotExist):
-            Department.objects.get(id=first_depart.id)
-        # obj is still available in the db
-        deleted_depart = Department.all_objects.get(id=first_depart.id)
-        self.assertTrue(deleted_depart.is_deleted)
+        for deaprt in self.created_departs:
+            deaprt.created_by = depart_creator
+            deaprt.save()
+            deaprt.can_be_accessed_by.add(access_allowed_user)
+
+        for user, target_depart in [
+            (depart_creator, self.created_departs[0]),
+            (access_allowed_user, self.created_departs[1])
+        ]:
+            response = self.auth_delete(
+                user, {}, [self.org.id, target_depart.id]
+            )
+            self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
+            # obj is deleted
+            with self.assertRaises(Department.DoesNotExist):
+                Department.objects.get(id=target_depart.id)
+            # obj is still available in the db
+            deleted_depart = Department.all_objects.get(id=target_depart.id)
+            self.assertTrue(deleted_depart.is_deleted)
     
     def test_user_get_not_found_error(self):
         response = self.auth_delete(self.owner_user, {}, [uuid.uuid4(), uuid.uuid4()])

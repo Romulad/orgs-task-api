@@ -33,9 +33,7 @@ class OrganizationViewset(FullModelViewSet):
     serializer_class=OrganizationSerializer
     filterset_class=OrganizationDataFilter
     ordering_fields=["name", "description", "created_at"]
-    queryset=Organization.objects.prefetch_related(
-        "members", "can_be_accessed_by"
-    ).select_related("owner", "created_by").order_by("created_at")
+    queryset=queryset_helpers.get_org_queryset().order_by("created_at")
 
     def get_serializer_class(self):
         if self.action == "bulk_delete":
@@ -104,7 +102,7 @@ class DepartmentViewset(FullModelViewSet):
     def get_object(self):
         org_id = self.kwargs["id"]
         dep_id = self.kwargs["depart_id"]
-        queryset = queryset_helpers.get_depart_queryset()
+        queryset = self.get_queryset()
         depart = get_object_or_404(queryset, id=dep_id, org__id=org_id)
         self.check_object_permissions(self.request, depart)
         return depart
@@ -120,8 +118,18 @@ class DepartmentViewset(FullModelViewSet):
     
     def get_queryset(self):
         org_id = self.kwargs["id"]
-        org = self.get_related_org_data_or_404(org_id)
-        return super().get_queryset().filter(org=org)
+        user = self.request.user
+        queryset = super().get_queryset().filter(
+            Q(org__id=org_id),
+            (
+                Q(org__created_by=user) |
+                Q(org__owner=user) |
+                Q(org__can_be_accessed_by__in=[user]) |
+                Q(created_by=user) |
+                Q(can_be_accessed_by__in=[user])
+            )
+        ).distinct()
+        return queryset
 
     def get_related_org_data(self, org_id):
         user = self.request.user

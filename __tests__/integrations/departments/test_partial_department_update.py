@@ -72,7 +72,7 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
-        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
         # data don't get updated
@@ -226,22 +226,29 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
         self.assertIn("Notification - You have been add to org", mail_sent.subject)
     
     def test_access_allowed_on_depart_can_update_data(self):
-        simple_user = self.create_and_active_user(email="simple_user@gmaild.con")
+        depart_creator = self.create_and_activate_random_user()
+        access_allowed_user = self.create_and_activate_random_user()
       
         first_depart = self.created_departs[0]
-        first_depart.can_be_accessed_by.add(simple_user)
+        first_depart.created_by = depart_creator
+        first_depart.save()
+        first_depart.can_be_accessed_by.add(access_allowed_user)
 
         req_data = {
-            "name": "new_name_never_user"
+            "name": "new_name_never_use"
         }
 
-        response = self.auth_patch(
-            simple_user, req_data, [self.org.id, first_depart.id]
-        )
-        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
-        data = self.loads(response.content)
-        self.assertEqual(data.get("id"), str(first_depart.id))
-        self.assertEqual(data.get("name"), 'new_name_never_user')
+        for user in [
+            depart_creator,
+            access_allowed_user
+        ]:
+            response = self.auth_patch(
+                user, req_data, [self.org.id, first_depart.id]
+            )
+            self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+            data = self.loads(response.content)
+            self.assertEqual(data.get("id"), str(first_depart.id))
+            self.assertEqual(data.get("name"), 'new_name_never_use')
         # data is updated
-        depart = Department.objects.get(name="new_name_never_user")
+        depart = Department.objects.get(name="new_name_never_use")
         self.assertEqual(depart.org.id, self.org.id)

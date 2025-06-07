@@ -67,7 +67,7 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             no_access_allowed, req_data, 
             [self.org.id, depart.id]
         )
-        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
         # data don't get updated
@@ -218,11 +218,14 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
     
     def test_access_allowed_on_depart_can_update_data(self):
         first_depart = self.created_departs[0]
-        free_user = self.create_and_active_user(email="free_user@hnm.com")
-        first_depart.can_be_accessed_by.add(free_user)
+        depart_creator = self.create_and_activate_random_user()
+        can_access_depart_user = self.create_and_activate_random_user()
+        first_depart.created_by = depart_creator
+        first_depart.save()
+        first_depart.can_be_accessed_by.add(can_access_depart_user)
 
         req_data = {
-            "name": "new_name_never_user",
+            "name": "new_name_never_use",
             "description": first_depart.description,
             "org": self.org.id,
             "members" : self.get_ids_from(
@@ -230,9 +233,16 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
             )
         }
 
-        response = self.auth_put(
-            free_user, req_data, [self.org.id, first_depart.id]
-        )
-        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
-        data = self.loads(response.content)
-        self.assertEqual(data.get("id"), str(first_depart.id))
+        for user in [
+            depart_creator,
+            can_access_depart_user
+        ]:
+            response = self.auth_put(
+                user, req_data, [self.org.id, first_depart.id]
+            )
+            self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+            data = self.loads(response.content)
+            self.assertEqual(data.get("id"), str(first_depart.id))
+        # data is updated
+        first_depart.refresh_from_db(fields=["name"])
+        self.assertEqual(first_depart.name, 'new_name_never_use')

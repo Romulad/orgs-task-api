@@ -36,9 +36,9 @@ class ManyPrimaryKeyRelatedField(serializers.RelatedField):
 
     def to_representation(self, data):
         serializer_class = self.serializer_class
-        data = data.all()
         if serializer_class is not None:
-            return [serializer_class(value).data for value in data]
+            return serializer_class(data, many=True).data
+        data = data.all()
         return [value.pk for value in data]
 
     def to_internal_value(self, pk_values:list):
