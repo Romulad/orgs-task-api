@@ -24,7 +24,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserDetailSerializer(UserSerializer):
-    pass
+    can_be_accessed_by = UserSerializer(many=True, read_only=True)
+
+    class Meta(UserSerializer.Meta):
+        fields = [
+            *UserSerializer.Meta.fields,
+            "can_be_accessed_by"
+        ]
 
 
 class CreateUserSerializer(UserDetailSerializer):

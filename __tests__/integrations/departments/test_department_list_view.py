@@ -66,7 +66,6 @@ class TestListOrgDepartmentView(BaseTestClass):
             self.assertIsNotNone(first_data.get('description', None))
             self.assertEqual(first_data.get('org').get('id'), str(org.id))
             self.assertIsNotNone(first_data.get('id', None))
-            self.assertIsNotNone(first_data.get('members', None))
             self.assertIsNotNone(first_data.get('created_at', None))
 
     def test_access_allowed_user_on_depart_only_can_access_depart(self):
@@ -95,7 +94,6 @@ class TestListOrgDepartmentView(BaseTestClass):
             self.assertIsNotNone(first_data.get('description', None))
             self.assertEqual(first_data.get('org').get('id'), str(org.id))
             self.assertIsNotNone(first_data.get('id', None))
-            self.assertIsNotNone(first_data.get('members', None))
             self.assertIsNotNone(first_data.get('created_at', None))
     
     def test_depart_can_be_filtered(self):

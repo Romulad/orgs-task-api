@@ -13,7 +13,6 @@ class OrganizationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
     owner = UserSerializer(read_only=True)
-    members = UserSerializer(many=True, read_only=True)
     name = serializers.ReadOnlyField()
     description = serializers.ReadOnlyField()
     class Meta:
@@ -23,12 +22,22 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "owner",
-            "members",
             "created_at"
         ]
 
 
-class CreateOrganizationSerializer(OrganizationSerializer):
+class OrganizationDetailSerializer(OrganizationSerializer):
+    members = UserSerializer(many=True, read_only=True)
+    can_be_accessed_by = UserSerializer(many=True, read_only=True)
+    class Meta(OrganizationSerializer.Meta):
+        fields = [
+            *OrganizationSerializer.Meta.fields,
+            "members",
+            "can_be_accessed_by"
+        ]
+
+
+class CreateOrganizationSerializer(OrganizationDetailSerializer):
     name = serializers.CharField(
         required=True,
         error_messages={
@@ -194,7 +203,6 @@ class DepartmentSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField()
     description = serializers.ReadOnlyField()
     org = OrganizationSerializer(read_only=True)
-    members = UserSerializer(many=True, read_only=True)
     created_at = serializers.ReadOnlyField()
 
     class Meta:
@@ -204,12 +212,23 @@ class DepartmentSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'org',
-            "members",
             'created_at',
         ]
 
 
-class CreateDepartmentSerializer(DepartmentSerializer):
+class DepartmentDeailSerializer(DepartmentSerializer):
+    members = UserSerializer(many=True, read_only=True)
+    can_be_accessed_by = UserSerializer(many=True, read_only=True)
+
+    class Meta(DepartmentSerializer.Meta):
+        fields = [
+            *DepartmentSerializer.Meta.fields,
+            "members",
+            "can_be_accessed_by"
+        ]
+
+
+class CreateDepartmentSerializer(DepartmentDeailSerializer):
     name = serializers.CharField(
         required=True,
         error_messages={

@@ -5,10 +5,12 @@ from django.shortcuts import get_object_or_404
 
 from .serializers import (
     OrganizationSerializer,
+    OrganizationDetailSerializer,
     CreateOrganizationSerializer,
     UpdateOrganizationSerializer,
     CreateDepartmentSerializer,
     DepartmentSerializer,
+    DepartmentDeailSerializer,
     UpdateDepartmentSerializer
 )
 from .filters import (
@@ -38,8 +40,10 @@ class OrganizationViewset(FullModelViewSet):
     def get_serializer_class(self):
         if self.action == "bulk_delete":
             return BulkDeleteResourceSerializer
+        elif self.action == 'retrieve':
+            return OrganizationDetailSerializer
         return super().get_serializer_class()
-
+    
     def get_serializer(self, *args, **kwargs):
         if self.action in [
             "create", "update", "partial_update"
@@ -82,6 +86,8 @@ class DepartmentViewset(FullModelViewSet):
     def get_serializer_class(self):
         if self.action == "change_owners":
             return ChangeUserOwnerListSerializer
+        elif self.action == "retrieve":
+            return DepartmentDeailSerializer
         return super().get_serializer_class()
 
     def get_serializer(self, *args, **kwargs):
