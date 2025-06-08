@@ -1,10 +1,9 @@
-import uuid
-
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from app_lib.models import AbstractBaseModel
+from app_lib.fn import get_diff_objs
 
 class Organization(AbstractBaseModel):
   name = models.CharField(
@@ -28,6 +27,11 @@ class Organization(AbstractBaseModel):
 
   def __str__(self):
     return f"{self.owner.email}_{self.name}"
+  
+  def add_no_exiting_members(self, users):
+      new_users = get_diff_objs(users, self.members.all())
+      if new_users:
+        self.members.add(*new_users)
   
 
 class Department(AbstractBaseModel):
