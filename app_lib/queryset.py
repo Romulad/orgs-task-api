@@ -129,7 +129,7 @@ class ModelDefaultQuerysets:
         default=False,
         only_select_related=False,
         only_prefetch_related=False
-    ):
+    ) -> QuerySet[UserPermissions]:
         return self.get_model_queryset(
             UserPermissions,
             default=default,

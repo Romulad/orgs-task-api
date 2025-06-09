@@ -99,9 +99,30 @@ class AuthorizationChecker:
                         org=org,
                         user=user
                     )
-                user_perm_obj.add_permissions(perms)
+                user_perm_obj.add_permissions(found)
                 
         return found, not_found
 
+    def remove_permissions_from_users(self, users, org, perms: str | list):
+        """Remove `perms` from each user in `users` in `org`. `users` can be a single
+        obj and it will be map to a list internally. Return in order:
+        - `list` of `removed` or found perms. Perms are removed only when exist on user
+        - `list` of `not_found` perms
+        """
+        _, to_remove, not_found = permissions_exist(perms)
+        if not to_remove:
+            return to_remove, not_found
+        
+        if not isinstance(users, list):
+            users = [users]
+
+        perm_objs = queryset_helpers.get_user_permission_queryset(
+            default=True
+        ).filter(org=org, user__in=users)
+
+        for perm_obj in perm_objs:
+            perm_obj.remove_permissions(to_remove)
+        
+        return to_remove, not_found
 
 auth_checker = AuthorizationChecker()

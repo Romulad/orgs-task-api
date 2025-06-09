@@ -63,14 +63,16 @@ class UserPermissions(AbstractBaseModel):
         - `list` of removed permissions
         - `list` of not found permissions
         """
-        _, not_found, found = permissions_exist(perms)
+        _, found, not_found = permissions_exist(perms)
 
         if found:
+            removed_count = 0
             user_perms = self.get_perms()
             for user_perm in found:
                 if user_perm in user_perms:
                     while user_perm in user_perms:
                         user_perms.remove(user_perm)
-            self.save(user_perms)
+                    removed_count += 1
+            self.save_perms(user_perms) if removed_count else ''
 
         return found, not_found

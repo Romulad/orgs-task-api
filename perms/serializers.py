@@ -53,3 +53,16 @@ class AddPermissionsSerializer(serializers.Serializer):
         perms_tuple = auth_checker.add_permissions_to_users(users, org, perms)
         org.add_no_exiting_members(users)
         return perms_tuple
+
+
+class RemovePermissionsSerializer(AddPermissionsSerializer):
+
+    def validate(self, attrs):
+        return attrs
+    
+    def create(self, validated_data):
+        users = validated_data["user_ids"]
+        org = validated_data["org"]
+        perms = validated_data["perms"]
+        perms_tuple = auth_checker.remove_permissions_from_users(users, org, perms)
+        return perms_tuple
