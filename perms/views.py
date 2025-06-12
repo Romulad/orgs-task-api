@@ -13,6 +13,7 @@ from .serializers import (
     RoleDetailSerializer,
     CreateRoleSerializer
 )
+from .filters import RoleDataFilter
 from app_lib.app_permssions import APP_PERMISSIONS
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
@@ -58,6 +59,8 @@ class RoleViewSet(FullModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
     queryset = queryset_helpers.get_role_queryset()
+    filterset_class = RoleDataFilter
+    ordering_fields = ['name', 'description', 'created_at', 'org__name']
 
     def get_serializer_class(self):
         if self.action == "create":

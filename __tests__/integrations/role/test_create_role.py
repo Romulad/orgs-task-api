@@ -5,7 +5,7 @@ from perms.models import Role
 from app_lib.app_permssions import get_perm_list
 
 
-class TestCreateTaskView(BaseTestClass):
+class TestCreateRoleView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - test data validation:

@@ -1,7 +1,5 @@
 from ..base_classe import BaseTestClass
 from tasks.models import Task
-from organization.models import Department
-
 
 class TestListTaskView(BaseTestClass):
     """### Flow

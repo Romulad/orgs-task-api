@@ -3,6 +3,9 @@ from django.db.models import Q
 
 
 class CommonFieldsFilter(filters.FilterSet):
+    """
+    Common filter set that includes fields for filtering by ID and creation date.
+    """
     ids = filters.BaseInFilter(
         field_name="id",
         label="Filter by list of id"
@@ -15,6 +18,10 @@ class CommonFieldsFilter(filters.FilterSet):
 
 
 class SearchThroughFilter(filters.FilterSet):
+    """
+    Filter set that allows searching through multiple fields.
+    This is a placeholder and `search_through` method should be overridden in subclasses.
+    """
     search = filters.CharFilter(
         method="search_through",
         label="Search through fields"
@@ -25,6 +32,10 @@ class SearchThroughFilter(filters.FilterSet):
 
 
 class BaseNameDescriptionDateDataFilter(CommonFieldsFilter, SearchThroughFilter):
+    """
+    Base filter set that includes common fields and allows searching through name and description.
+    It provides filters for name and description fields with various lookup expressions.
+    """
     name = filters.CharFilter(
         field_name="name", 
         lookup_expr="exact", 

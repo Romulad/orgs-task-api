@@ -1,9 +1,8 @@
 import uuid
 
 from ..base_classe import BaseTestClass
-from perms.models import Role
 
-class TestCreateTaskView(BaseTestClass):
+class TestGetRoleView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user get not when ressource does not exist
