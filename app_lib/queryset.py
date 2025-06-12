@@ -4,7 +4,7 @@ from django.db.models.query import QuerySet
 from organization.models import Department, Organization
 from tasks.models import Task
 from tags.models import Tag
-from perms.models import UserPermissions
+from perms.models import UserPermissions, Role
 
 class ModelDefaultQuerysets:
     """
@@ -136,6 +136,21 @@ class ModelDefaultQuerysets:
             only_select_related=only_select_related,
             only_prefetch_related=only_prefetch_related,
             select_related_fields=["org", "created_by", "user"],
+            prefetch_related_fields=["can_be_accessed_by"]
+        )
+
+    def get_role_queryset(
+        self,
+        default=False,
+        only_select_related=False,
+        only_prefetch_related=False
+    ) -> QuerySet[Role]:
+        return self.get_model_queryset(
+            Role,
+            default=default,
+            only_select_related=only_select_related,
+            only_prefetch_related=only_prefetch_related,
+            select_related_fields=["org", "created_by"],
             prefetch_related_fields=["can_be_accessed_by"]
         )
 

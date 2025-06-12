@@ -2,14 +2,12 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from app_lib.models import AbstractBaseModel
+from app_lib.models import AbstractBasePermissionModel
 from organization.models import Organization
-from app_lib.app_permssions import permissions_exist
-
 
 User =  settings.AUTH_USER_MODEL
 
-class UserPermissions(AbstractBaseModel):
+class UserPermissions(AbstractBasePermissionModel):
     '''User permissions in an organization'''
     user = models.ForeignKey(
         User, on_delete=models.CASCADE,
@@ -19,7 +17,6 @@ class UserPermissions(AbstractBaseModel):
         Organization, on_delete=models.CASCADE,
         verbose_name=_("Organization")
     )
-    perms = models.TextField()
 
     class Meta:
         verbose_name = _("User permission")
@@ -28,51 +25,23 @@ class UserPermissions(AbstractBaseModel):
 
     def __str__(self):
         return super().__str__()
-    
-    def save_perms(self, perms:list):
-        updated_perms = ",".join(perms)
-        self.perms = updated_perms
-        self.save()
 
-    def get_perms(self):
-        user_perms = self.perms.split(",")
-        while '' in user_perms:
-            user_perms.remove('')
-        return user_perms
-    
-    def add_permissions(self, perms:str|list[str]):
-        """Add permissions to the user and return a tuple containing in order: 
-        - `list` of added permissions
-        - `list` of not found permissions
-        """
-        _, found, not_found = permissions_exist(perms)
 
-        if found:
-            added_count = 0
-            user_perms = self.get_perms()
-            for user_perm in found:
-                if user_perm not in user_perms:
-                    user_perms.append(user_perm)
-                    added_count += 1
-            self.save_perms(user_perms) if added_count else ''
+class Role(AbstractBasePermissionModel):
+    name = models.CharField(
+        _("Name of the role"),
+        max_length=255
+    )
+    description = models.TextField(
+        _("Role description"),
+    )
+    org = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        verbose_name=_("Organization")
+    )
 
-        return found, not_found
-
-    def remove_permissions(self, perms:str|list[str]):
-        """Remove permissions from the user and return a tuple containing in order: 
-        - `list` of removed permissions
-        - `list` of not found permissions
-        """
-        _, found, not_found = permissions_exist(perms)
-
-        if found:
-            removed_count = 0
-            user_perms = self.get_perms()
-            for user_perm in found:
-                if user_perm in user_perms:
-                    while user_perm in user_perms:
-                        user_perms.remove(user_perm)
-                    removed_count += 1
-            self.save_perms(user_perms) if removed_count else ''
-
-        return found, not_found
+    class Meta:
+        verbose_name = _("Role")
+        verbose_name_plural = _("Roles")
+        unique_together = ("name", 'org')

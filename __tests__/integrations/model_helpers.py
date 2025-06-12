@@ -6,6 +6,7 @@ from organization.models import Department, Organization
 from user.models import AppUser as User
 from tags.models import Tag
 from tasks.models import Task
+from perms.models import Role
 
 class TestModelHelpers:
 
@@ -91,3 +92,13 @@ class TestModelHelpers:
             created_by = new_creator
         )
         return new_creator, task
+
+    def create_new_role(self, org, name=None, creator=None):
+        """Create a new role in `org`, return creator and role objects"""
+        new_creator = self.create_and_activate_random_user() if not creator else creator
+        role = Role.objects.create(
+            name = str(uuid.uuid4()) if not name else name,
+            org = org,
+            created_by = new_creator
+        )
+        return new_creator, role
