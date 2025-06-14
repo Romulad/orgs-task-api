@@ -30,12 +30,18 @@ class TestUPdateRoleView(BaseTestClass):
             to act on the new specified org
         - perms:
             - field is required
+        - users if specified:
+            - field is required
+            - should be a valid value
+            - user ids should be valid user ids
+            - org owner should have a full access over specified user
     - test user with access:
         - org owner
         - org creator and creator of the role
         - user with `can_be_accessed_by` permission on both org and role
     can update role data successfully with permission list containing invalid or valid permissions
     - test response data is valid and perms set
+    - test new user are added to org when no members yet
     """
     url_name = "roles-detail"
 
@@ -45,7 +51,7 @@ class TestUPdateRoleView(BaseTestClass):
         self.roles = [self.create_new_role(self.org)[-1] for _ in range(10)]
         self.req_data = model_to_dict(
             self.target_role, 
-            fields=["name", "description", "org", "perms"]
+            fields=["name", "description", "org", "perms", "users"]
         )
 
     def test_only_authenticated_user_can_access(self):
@@ -174,6 +180,37 @@ class TestUPdateRoleView(BaseTestClass):
         with self.assertRaises(self.target_role.__class__.DoesNotExist):
             self.target_role.__class__.objects.get(name=self.req_data["name"])
     
+    def test_users_validation(self):
+        del self.req_data["users"]
+        self.req_data["perms"] = []
+
+        test_data = [
+            self.req_data,
+            {
+                **self.req_data,
+                "users": "",
+            },
+            {
+                **self.req_data,
+                "users": [uuid.uuid4()],
+            },
+            {
+                **self.req_data,
+                "users": [self.create_and_activate_random_user().id],
+            },
+        ]
+        for req_data in test_data:
+            response = self.auth_put(self.owner_user, req_data, [self.target_role.id])
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            errors = self.loads(response.content).get("users")
+            self.assertIsInstance(errors, list)
+        self.target_role.refresh_from_db()
+        self.assertEqual(
+            len(
+                self.target_role.users.all()
+            ), 0
+        )
+        
     def test_user_with_access_can_update_role(self):
         can_access_org_user = self.create_and_activate_random_user()
         self.org.can_be_accessed_by.add(can_access_org_user)
@@ -213,6 +250,7 @@ class TestUPdateRoleView(BaseTestClass):
             self.assertEqual(len(real_perms), len(data.get("perms")))
             self.assertIsNotNone(data.get("created_at"))
             self.assertIsInstance(data.get("can_be_accessed_by"), list)
+            self.assertIsInstance(data.get("users"), list)
             # role has been updated with new name and perms
             updated = target_role.__class__.objects.get(
                 id=target_role.id, name=self.req_data["name"], org=self.org
@@ -222,3 +260,27 @@ class TestUPdateRoleView(BaseTestClass):
             self.assertEqual(len(role_perms), len(real_perms))
             for perm in real_perms:
                 self.assertIn(perm, role_perms)
+    
+    def test_users_are_added_to_org_when_not_member_yet(self):
+        users = [self.create_and_activate_random_user() for _ in range(4)]
+        [user.can_be_accessed_by.add(self.owner_user) for user in users]
+
+        req_data = {
+            **self.req_data,
+            "users": self.get_ids_from(users),
+            "perms": []
+
+        }
+        response = self.auth_put(self.owner_user, req_data, [self.target_role.id])
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content)
+        self.assertIsInstance(data.get("users"), list)
+        self.assertEqual(len(data.get("users")), len(users))
+        # Role has been updated with users
+        self.target_role.refresh_from_db()
+        [self.assertIn(user, self.target_role.users.all()) for user in users]
+        # org members have been updated
+        self.org.refresh_from_db()
+        members = self.org.members.all()
+        self.assertEqual(len(members), len(users))
+        [self.assertIn(new_member, members) for new_member in users]

@@ -197,6 +197,11 @@ class UpdateRoleSerializer(CreateRoleSerializer):
         required=True,
         allow_empty=True,
     )
+    users = ManyPrimaryKeyRelatedField(
+        queryset=queryset_helpers.get_user_queryset(),
+        required=True,
+        allow_empty=True,
+    )
 
     def validate_name(self, name):
         if self.instance.name == name:
@@ -225,5 +230,14 @@ class UpdateRoleSerializer(CreateRoleSerializer):
     def update(self, instance, validated_data):
         if perms := validated_data.get("perms", None):
             validated_data["perms"] = Role.dump_perms(perms)
+        
+        org = validated_data.get("org", None)
+        users = validated_data.get("users", None)
+
         updated_role = super().update(instance, validated_data)
+
+        if users is not None:
+            target_org = org if org is not None else instance.org
+            target_org.add_no_exiting_members(users)
+
         return updated_role
