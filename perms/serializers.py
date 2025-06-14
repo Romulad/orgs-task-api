@@ -77,7 +77,7 @@ class RoleSerializer(serializers.ModelSerializer):
     description = serializers.ReadOnlyField()
     org = OrganizationSerializer(read_only=True)
     created_at = serializers.ReadOnlyField()
-    perms = serializers.ReadOnlyField(source='get_perms')
+    perms = serializers.ReadOnlyField()
     class Meta:
         model = Role
         fields = [
@@ -88,6 +88,11 @@ class RoleSerializer(serializers.ModelSerializer):
             "org",
             "created_at"
         ]
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["perms"] = instance.get_perms()
+        return representation
 
 
 class RoleDetailSerializer(RoleSerializer):
@@ -150,3 +155,31 @@ class CreateRoleSerializer(RoleDetailSerializer):
         validated_data["created_by"] = user
         created_role = super().create(validated_data)
         return created_role
+
+
+class UpdateRoleSerializer(CreateRoleSerializer):
+    description = serializers.CharField(
+        required=True,
+        allow_blank=True,
+    )
+    perms = serializers.ListField(
+        child=serializers.CharField(),
+        required=True,
+        allow_empty=True,
+    )
+
+    def validate_name(self, name):
+        if self.instance.name == name:
+            return name
+        return super().validate_name(name)
+
+    def validate_org(self, org):
+        if self.instance.org.id == org.id:
+            return org
+        return super().validate_org(org)
+
+    def update(self, instance, validated_data):
+        if perms := validated_data.get("perms", None):
+            validated_data["perms"] = Role.dump_perms(perms)
+        updated_role = super().update(instance, validated_data)
+        return updated_role

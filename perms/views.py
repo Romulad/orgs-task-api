@@ -11,12 +11,14 @@ from .serializers import (
     RemovePermissionsSerializer,
     RoleSerializer,
     RoleDetailSerializer,
-    CreateRoleSerializer
+    CreateRoleSerializer,
+    UpdateRoleSerializer
 )
 from .filters import RoleDataFilter
 from app_lib.app_permssions import APP_PERMISSIONS
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
+from app_lib.permissions import CanAccessOrgOrObj
 
 
 @api_view([HTTPMethod.GET])
@@ -67,15 +69,23 @@ class RoleViewSet(FullModelViewSet):
             return CreateRoleSerializer
         elif self.action == "retrieve":
             return RoleDetailSerializer
+        elif self.action in ["update", "partial_update"]:
+            return UpdateRoleSerializer
         return super().get_serializer_class()
+    
+    def get_permissions(self):
+        if self.action in ["update", "partial_update"]:
+            self.permission_classes = [IsAuthenticated, CanAccessOrgOrObj]
+        return super().get_permissions()
 
     def get_queryset(self):
         user = self.request.user
-        return super().get_queryset().filter(
+        queryset = super().get_queryset().filter(
             Q(created_by=user) |
             Q(can_be_accessed_by=user) |
             Q(org__owner=user) | 
             Q(org__created_by=user) | 
             Q(org__can_be_accessed_by=user) |
             Q(org__members=user)
-        )
+        ).distinct()
+        return queryset

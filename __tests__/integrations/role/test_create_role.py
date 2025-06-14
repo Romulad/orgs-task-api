@@ -108,7 +108,7 @@ class TestCreateRoleView(BaseTestClass):
             self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
             data = self.loads(response.content)
             self.assertEqual(data.get("name"), user.email)
-            self.assertEqual(data.get("org").get("id"), str(self.org.id))
+            self.assertEqual(data.get("org"), str(self.org.id))
             self.assertIsInstance(data.get("perms"), list)
             self.assertIsNotNone(data.get("description", None))
             self.assertIsInstance(data.get("can_be_accessed_by"), list)

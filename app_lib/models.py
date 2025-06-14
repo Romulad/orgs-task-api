@@ -1,15 +1,24 @@
 import uuid
 
-from django.db import models
+from django.db import models, router
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.db.models.manager import Manager
+from django.db.models.deletion import Collector
+from django.contrib.auth import get_user_model
 
+from .app_permssions import permissions_exist
 
 class DefaultManager(Manager):
     
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
+    
+    def delete(self):
+        return super().delete()
+
+    def hard_delete(self):
+        return super().delete()
 
 
 class AbstractBaseModel(models.Model):
@@ -55,10 +64,122 @@ class AbstractBaseModel(models.Model):
     class Meta:
         abstract = True
     
-    def delete(self):
-        self.is_deleted = True
-        self.save()
+    def delete(self, using=None, keep_parents=False):
+        import pprint
+        if not self._is_pk_set():
+            raise ValueError(
+                "%s object can't be deleted because its %s attribute is set "
+                "to None." % (self._meta.object_name, self._meta.pk.attname)
+            )
+        using = using or router.db_for_write(self.__class__, instance=self)
+        collector = Collector(using=using, origin=self)
+        collector.collect([self], keep_parents=keep_parents)
+
+        user_model = collector.data[get_user_model()]
+
+        # pprint.pprint([
+        #     (field, field.many_to_one and "many_to_one", 
+        #      field.one_to_one and "one_to_one", 
+        #      field.one_to_many and 'one_to_many', 
+        #      field.many_to_many and 'many_to_many'
+        #     ) for field in
+        #     user_model.pop()._meta.get_fields()
+        #     if field.is_relation
+        # ])
+
+        pprint.pprint((
+            ("deletion", collector.data), 
+            ("fast delete", collector.fast_deletes), 
+            ("update", collector.field_updates)
+        ))
+
+        # self.is_deleted = True
+        # self.save()
         return True
     
     def hard_delete(self, using=None, keep_parents=False):
         return super().delete(using, keep_parents)
+
+
+class AbstractBasePermissionModel(AbstractBaseModel):
+    """Provide a permission text field along with how to create and remove
+    permissions"""
+    perms = models.TextField(
+        _("Permissions"),
+    )
+
+    class Meta:
+        abstract = True
+
+    def __setattr__(self, name, value):
+        if name == "perms":
+            # ensure after perms manipulation the value is set back as string
+            if not isinstance(value, (str, list)):
+                raise ValueError(
+                    f"perms model attribute must be set as a string not {type(value)}"
+                )
+            if isinstance(value, list):
+                value = self.dump_perms(value)
+        object.__setattr__(self, name, value)
+    
+    @classmethod
+    def dump_perms(cls, perms:list) -> str:
+        """Dump permissions to a string"""
+        if isinstance(perms, str):
+            return perms
+        
+        if len(perms) == 0:
+            return ""
+        
+        return ",".join(perms)
+
+    def save_perms(self, perms:list):
+        self.perms = self.dump_perms(perms)
+        self.save()
+
+    def get_perms(self) -> list[str]:
+        """Get permissions of the user as a list"""
+        user_perms = self.perms.split(",")
+        while '' in user_perms:
+            user_perms.remove('')
+        return user_perms
+    
+    def add_permissions(self, perms:str|list[str]):
+        """Add permissions to the user and return a tuple containing in order: 
+        - `list` of added permissions
+        - `list` of not found permissions
+        """
+        _, found, not_found = permissions_exist(perms)
+
+        if found:
+            added_count = 0
+            user_perms = self.get_perms()
+            for user_perm in found:
+                if user_perm not in user_perms:
+                    user_perms.append(user_perm)
+                    added_count += 1
+            if added_count:
+                self.save_perms(user_perms)
+
+        return found, not_found
+
+    def remove_permissions(self, perms:str|list[str]):
+        """Remove permissions from the user and return a tuple containing in order: 
+        - `list` of removed permissions
+        - `list` of not found permissions
+        """
+        _, found, not_found = permissions_exist(perms)
+
+        if found:
+            removed_count = 0
+            user_perms = self.get_perms()
+            for user_perm in found:
+                if user_perm in user_perms:
+                    while user_perm in user_perms:
+                        user_perms.remove(user_perm)
+                    removed_count += 1
+            
+            if removed_count:
+                self.save_perms(user_perms)
+
+        return found, not_found

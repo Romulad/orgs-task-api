@@ -48,7 +48,7 @@ class BulkDeleteResourceMixin:
         deleted = [str(deleted.id) for deleted in to_be_deleted]
         not_found = [n_id for n_id in ressource_ids if n_id not in deleted]
         with atomic():
-            deleted_count = to_be_deleted.update(is_deleted=True)
+            deleted_count = to_be_deleted.delete()
 
         if len(ressource_ids) == deleted_count:
             return Response(status=status.HTTP_204_NO_CONTENT)

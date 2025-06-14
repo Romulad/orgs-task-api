@@ -1,5 +1,4 @@
 from django.db.models import Q
-from django_filters import rest_framework as filters
 
 from app_lib.filter import BaseNameDescriptionDateDataFilter
 from .models import Role

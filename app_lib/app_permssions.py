@@ -1,11 +1,16 @@
 from django.utils.translation import gettext_lazy as _
 
 CAN_CREATE_TASK = "can_create_task"
+CAN_VIEW_TASK = "can_view_task"
 
 APP_PERMISSIONS = {
     CAN_CREATE_TASK: {
         "name": _("Can create task"),
         "help_text": _("Any user with this permission can create task in the given organization")
+    },
+    CAN_VIEW_TASK: {
+        "name": _("Can view task"),
+        "help_text": _("Any user with this permission can view tasks in the given organization")
     }
 }
 
