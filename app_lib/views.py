@@ -62,6 +62,8 @@ class BulkDeleteResourceMixin:
 
 
 class ChangeObjectOwnersMixin:
+    owner_view_name = "change_owners"
+    
     @action(
         detail=True, 
         methods=[HTTPMethod.POST],
