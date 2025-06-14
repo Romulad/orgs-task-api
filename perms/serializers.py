@@ -225,7 +225,34 @@ class UpdateRoleSerializer(CreateRoleSerializer):
         if self.initial_data.get("name", None) is None:
             self.assert_name_uniqueness(self.instance.name, org.id)
 
+        # ensure the new org owner has a full access over users with role
+        if self.initial_data.get("users", None) is None:
+            if not auth_checker.has_access_to_objs(
+                self.instance.users.all(), org.owner
+            ):
+                raise serializers.ValidationError(_(
+                    "The new organization owner need to have a full access"
+                    "over existing users with this role"
+                ))
+
         return org
+
+    def validate(self, attrs):
+        org = attrs.get("org")
+        users = attrs.get("users")
+
+        if users:
+            if org:
+                return super().validate(attrs)
+            # users is specified, no org, make sure the existing org owner has access to users
+            elif not org and not auth_checker.has_access_to_objs(
+                users, self.instance.org.owner
+            ):
+                raise serializers.ValidationError({"users": [
+                    _("The role org owner need to have access to all specified users")
+                ]})
+
+        return attrs
 
     def update(self, instance, validated_data):
         if perms := validated_data.get("perms", None):
