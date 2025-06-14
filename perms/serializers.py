@@ -96,10 +96,12 @@ class RoleSerializer(serializers.ModelSerializer):
 
 
 class RoleDetailSerializer(RoleSerializer):
+    users = UserSerializer(many=True, read_only=True)
     can_be_accessed_by = UserSerializer(many=True, read_only=True)
     class Meta(RoleSerializer.Meta):
         fields = [
             *RoleSerializer.Meta.fields,
+            "users",
             "can_be_accessed_by"
         ]
 
@@ -123,6 +125,11 @@ class CreateRoleSerializer(RoleDetailSerializer):
     org = serializers.PrimaryKeyRelatedField(
         required=True,
         queryset=queryset_helpers.get_org_queryset()
+    )
+    users = ManyPrimaryKeyRelatedField(
+        queryset=queryset_helpers.get_user_queryset(),
+        required=False,
+        allow_empty=True,
     )
 
     def validate_org(self, org):
@@ -150,12 +157,33 @@ class CreateRoleSerializer(RoleDetailSerializer):
         _, found, _ = permissions_exist(perms)
         return found
     
+    def validate(self, attrs):
+        org = attrs.get("org")
+
+        users = attrs.get("users", None)
+        if users:
+            if not auth_checker.has_access_to_objs(users, org.owner):
+                raise serializers.ValidationError({"users": [
+                    _("The org owner need to have access to all users")
+                ]})
+
+        return attrs
+    
     def create(self, validated_data):
         user = self.context['request'].user
+        validated_data["created_by"] = user
+
         perms = validated_data.get("perms", [])
         validated_data["perms"] = Role.dump_perms(perms)
-        validated_data["created_by"] = user
+
+        org = validated_data["org"]
+        users = validated_data.get("users", None)
+
         created_role = super().create(validated_data)
+
+        if users is not None:
+            org.add_no_exiting_members(users)
+
         return created_role
 
 

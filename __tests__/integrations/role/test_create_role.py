@@ -17,10 +17,16 @@ class TestCreateRoleView(BaseTestClass):
             - field is required
             - org id should be a valid id
             - user making the request should have permission to act on the org
-        - perms:
+        - perms :
             - field is optional and can be empty list
-    - test user can create role within the org successfully and if `perms` specified, valid perm value are 
-    added to the role successfully and `created_by` is set. User inclue org `owner`, `creator` or `can_be_accessed_by` users
+        - users if specified:
+            - should be a valid value
+            - user ids should be valid user ids
+            - org owner should have a full access over specified user
+    - test org `owner`, `creator` or `can_be_accessed_by` can create role within 
+    the org successfully and if `perms` specified, valid perm value are added to the role 
+    successfully and `created_by` is set. 
+    - test users are added to org as members if not yet
     """
     url_name = "roles-list"
 
@@ -85,6 +91,32 @@ class TestCreateRoleView(BaseTestClass):
             self.assertIsInstance(errors, list)
         self.assert_no_more_role_created(0)
     
+    def test_users_validation(self):
+        test_data = test_data = [
+            {
+                "name": "Manager",
+                "org": self.org.id,
+                "users": "",
+            },
+            {
+                "name": "Manager",
+                "org": self.org.id,
+                "users": [uuid.uuid4()],
+            },
+            {
+                "name": "Manager",
+                "org": self.org.id,
+                "users": [self.create_and_activate_random_user().id],
+            },
+        ]
+
+        for req_data in test_data:
+            response = self.auth_post(self.creator, req_data)
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            errors = self.loads(response.content).get("users")
+            self.assertIsInstance(errors, list)
+        self.assert_no_more_role_created(0)
+    
     def test_successfull_role_creation(self):
         real_perm = get_perm_list()[:5]
         role_perms = real_perm + ["fake_perm_", "random_PERM"]
@@ -112,6 +144,7 @@ class TestCreateRoleView(BaseTestClass):
             self.assertIsInstance(data.get("perms"), list)
             self.assertIsNotNone(data.get("description", None))
             self.assertIsInstance(data.get("can_be_accessed_by"), list)
+            self.assertIsInstance(data.get("users"), list)
             # role has been created with created_by set
             created = Role.objects.get(name=user.email, org=self.org, created_by=user)
             if req_data.get("perms"):
@@ -120,3 +153,24 @@ class TestCreateRoleView(BaseTestClass):
                 [self.assertIn(perm, role_perms) for perm in real_perm]                
             perm_was_included = not perm_was_included
     
+    def test_users_are_added_to_org_when_not_member_yet(self):
+        users = [self.create_and_activate_random_user() for _ in range(4)]
+        [user.can_be_accessed_by.add(self.owner) for user in users]
+
+        req_data = {
+            "name": "Manager",
+            "org": self.org.id,
+            "users": self.get_ids_from(users)
+        }
+        response = self.auth_post(self.owner, req_data)
+        self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+        data = self.loads(response.content)
+        self.assertIsInstance(data.get("users"), list)
+        self.assertEqual(len(data.get("users")), len(users))
+        # Role has been created with users
+        assert len(Role.objects.filter(name="Manager", users__in=users).distinct()) == 1
+        # org members have been updated
+        self.org.refresh_from_db()
+        members = self.org.members.all()
+        self.assertEqual(len(members), len(users))
+        [self.assertIn(new_member, members) for new_member in users]

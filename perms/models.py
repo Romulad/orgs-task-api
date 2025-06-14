@@ -40,6 +40,10 @@ class Role(AbstractBasePermissionModel):
         on_delete=models.CASCADE,
         verbose_name=_("Organization")
     )
+    users = models.ManyToManyField(
+        User,
+        verbose_name=_("Set of users that have the role")
+    )
 
     class Meta:
         verbose_name = _("Role")
