@@ -133,15 +133,17 @@ class CreateRoleSerializer(RoleDetailSerializer):
             )
         return org
     
-    def validate_name(self, name):
-        org_id = self.initial_data.get("org", "")
+    def assert_name_uniqueness(self, name, org_id):
         if Role.objects.filter(
             name=name, org__id=org_id
-        ).exists():            
+        ).exists():           
             raise serializers.ValidationError( 
                 _("Role with this name already exists in the organization.")
             )
-        
+    
+    def validate_name(self, name):
+        org_id = self.initial_data.get("org", "")
+        self.assert_name_uniqueness(name, org_id)
         return name
     
     def validate_perms(self, perms):
@@ -171,12 +173,26 @@ class UpdateRoleSerializer(CreateRoleSerializer):
     def validate_name(self, name):
         if self.instance.name == name:
             return name
-        return super().validate_name(name)
+        
+        if self.initial_data.get("org"):
+            return super().validate_name(name)
+        
+        self.assert_name_uniqueness(name, self.instance.org.id)
+
+        return name
 
     def validate_org(self, org):
         if self.instance.org.id == org.id:
             return org
-        return super().validate_org(org)
+        
+        # validate user permission over org
+        super().validate_org(org)
+
+        # ensure the new org does not have a role with the same already
+        if self.initial_data.get("name", None) is None:
+            self.assert_name_uniqueness(self.instance.name, org.id)
+
+        return org
 
     def update(self, instance, validated_data):
         if perms := validated_data.get("perms", None):

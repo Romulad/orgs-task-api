@@ -114,12 +114,12 @@ class AbstractBasePermissionModel(AbstractBaseModel):
     def __setattr__(self, name, value):
         if name == "perms":
             # ensure after perms manipulation the value is set back as string
-            if not isinstance(value, (str, list)):
+            if isinstance(value, list):
+                value = self.dump_perms(value)
+            elif not isinstance(value, str):
                 raise ValueError(
                     f"perms model attribute must be set as a string not {type(value)}"
                 )
-            if isinstance(value, list):
-                value = self.dump_perms(value)
         object.__setattr__(self, name, value)
     
     @classmethod
