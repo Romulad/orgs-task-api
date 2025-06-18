@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import EmailValidator
+from django.conf import settings
 
 from .user_manager import CustomUserManager
 from app_lib.models import AbstractBaseModel
@@ -28,6 +29,13 @@ class AppUser(AbstractBaseModel, AbstractBaseUser):
             "Designates whether this user should be treated as active. "
             "Unselect this instead of deleting accounts."
         ),
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_created",
+        null=True,
+        blank=True
     )
     
     objects = CustomUserManager()

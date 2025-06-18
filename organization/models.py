@@ -13,11 +13,18 @@ class Organization(AbstractBaseModel):
     _("organization description"), default=""
   )
   owner = models.ForeignKey(
-    settings.AUTH_USER_MODEL, on_delete=models.CASCADE, 
-    verbose_name=_('organization owner'), related_name="org_owner"
+    settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, 
+    verbose_name=_('organization owner'), related_name="org_owner",
+    null=True
   )
   members = models.ManyToManyField(
     settings.AUTH_USER_MODEL, verbose_name=_('organization members')
+  )
+  created_by = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    on_delete=models.CASCADE,
+    null=True,
+    related_name="user_orgs",
   )
 
   class Meta:
