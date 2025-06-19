@@ -6,7 +6,7 @@ from .soft_deletion import SoftDeleteCollector
 
 class DefaultQueryset(QuerySet):
     def delete(self):
-        """Delete the records in the current QuerySet."""
+        """Soft Delete the records in the current QuerySet."""
         # From django.db.models.query
         self._not_support_combined_queries("delete")
         if self.query.is_sliced:
@@ -36,8 +36,16 @@ class DefaultQueryset(QuerySet):
         self._result_cache = None
         return num_deleted, num_deleted_per_model
 
+    delete.alters_data = True
+    delete.queryset_only = True
+
     def hard_delete(self):
+        """Completly delete the records in the current queryset"""
         return super().delete()
+    
+    hard_delete.alters_data = True
+    hard_delete.queryset_only = True
+
     
 
 class _DefaultManager(Manager):
@@ -54,7 +62,7 @@ class DefaultUserManager(BaseUserManager, DefaultManager):
     """
     Default user manager
     """
-    
+
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
