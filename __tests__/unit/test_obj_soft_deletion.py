@@ -1,6 +1,6 @@
 from ..base_classe import BaseTestClass
 
-class TestSoftDeletion(BaseTestClass):
+class TestObjSoftDeletion(BaseTestClass):
     """
     - create a user and delete it, should be deleted with is_deleted and still on all_object
     - create a user A, create a related org with user A as creator, create a related user B to user A
@@ -19,7 +19,7 @@ class TestSoftDeletion(BaseTestClass):
     - for nested relation, create user A, create a related org with user A as creator, 
     create related depart for the org, create task related to the org, create a role related to org then
     delete user A, every created ressource should be deleted with is_deleted and still available 
-    throught all_objects
+    through all_objects
     - test a hard deletion work as it should, no ressource will be available either on objects nor on 
     all_objects after deletion
     - simulate many object creation
