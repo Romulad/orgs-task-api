@@ -15,7 +15,7 @@ from .global_serializers import (
     BulkDeleteResourceSerializer,
     ChangeUserOwnerListSerializer
 )
-from .permissions import IsObjectCreatorOrObj
+from .permissions import Is_Object_Creator_Or_Obj
 
 
 class BulkDeleteResourceMixin:
@@ -72,7 +72,7 @@ class ChangeObjectOwnersMixin:
     @action(
         detail=True, 
         methods=[HTTPMethod.POST],
-        permission_classes=[IsAuthenticated, IsObjectCreatorOrObj],
+        permission_classes=[IsAuthenticated, Is_Object_Creator_Or_Obj],
         url_name="change-owners",
         url_path="change-owners",
         serializer_class=ChangeUserOwnerListSerializer

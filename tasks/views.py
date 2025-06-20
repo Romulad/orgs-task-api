@@ -9,7 +9,7 @@ from tasks.serializers import (
     CreateTaskSerializer,
     UpdateTaskSeriliazer
 )
-from app_lib.permissions import CanAccessOrgDepartOrObj, IsObjectOrOrgOrDepartCreator
+from app_lib.permissions import Can_Access_Org_Depart_Or_Obj, Is_Object_Or_Org_OrDepart_Creator
 from .filters import TaskDataFilter
 
 class TaskViewSet(FullModelViewSet):
@@ -43,9 +43,9 @@ class TaskViewSet(FullModelViewSet):
     
     def get_permissions(self):
         if self.action in [
-            "destroy", 'bulk_delete', "update", "partial_update"
+            "destroy", self.bulk_delete_view_name, "update", "partial_update"
         ]:
-            self.permission_classes = [IsAuthenticated, CanAccessOrgDepartOrObj]
+            self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
         elif self.action == "change_owners":
-            self.permission_classes = [IsAuthenticated, IsObjectOrOrgOrDepartCreator]
+            self.permission_classes = [IsAuthenticated, Is_Object_Or_Org_OrDepart_Creator]
         return super().get_permissions()

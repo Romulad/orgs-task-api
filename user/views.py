@@ -14,7 +14,7 @@ from .serializers import (
 )
 from .models import AppUser as User
 from .filters import UserDataFilter
-from app_lib.permissions import IsObjectCreatorOrObj
+from app_lib.permissions import Is_Object_Creator_Or_Obj
 
 class UserViewSet(FullModelViewSet):
     serializer_class = UserDetailSerializer
@@ -41,7 +41,7 @@ class UserViewSet(FullModelViewSet):
     
     def get_permissions(self):
         if self.action in ["destroy", 'bulk_delete']:
-            self.permission_classes = [IsAuthenticated, IsObjectCreatorOrObj]
+            self.permission_classes = [IsAuthenticated, Is_Object_Creator_Or_Obj]
         return super().get_permissions()
 
     @action(

@@ -18,7 +18,11 @@ from .filters import RoleDataFilter
 from app_lib.app_permssions import APP_PERMISSIONS
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
-from app_lib.permissions import CanAccessOrgOrObj, IsObjectCreatorOrgCreator
+from app_lib.permissions import (
+    Can_Access_Org_Or_Obj, 
+    Is_Object_Creator_Org_Creator,
+    Can_Access_Org_Depart_Or_Obj
+)
 
 
 @api_view([HTTPMethod.GET])
@@ -74,10 +78,12 @@ class RoleViewSet(FullModelViewSet):
         return super().get_serializer_class()
     
     def get_permissions(self):
-        if self.action in ["update", "partial_update"]:
-            self.permission_classes = [IsAuthenticated, CanAccessOrgOrObj]
+        if self.action in ["update", "partial_update", "destroy"]:
+            self.permission_classes = [IsAuthenticated, Can_Access_Org_Or_Obj]
         elif self.action == self.owner_view_name:
-            self.permission_classes = [IsAuthenticated, IsObjectCreatorOrgCreator]
+            self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
+        elif self.action == self.bulk_delete_view_name:
+            self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
         return super().get_permissions()
 
     def get_queryset(self):

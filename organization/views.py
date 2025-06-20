@@ -19,9 +19,9 @@ from .filters import (
 )
 from .models import Organization
 from app_lib.permissions import (
-    CanAccessedObjectInstance,
-    IsObjectCreatorOrgCreator,
-    CanAccessOrgOrObj
+    Can_Access_ObjectInstance,
+    Is_Object_Creator_Org_Creator,
+    Can_Access_Org_Or_Obj
 )
 from app_lib.global_serializers import (
     BulkDeleteResourceSerializer,
@@ -71,7 +71,7 @@ class OrganizationViewset(FullModelViewSet):
             "update", "partial_update", "retrieve", "destroy"
         ]:
             self.permission_classes = [
-                IsAuthenticated, CanAccessedObjectInstance
+                IsAuthenticated, Can_Access_ObjectInstance
             ]
         return super().get_permissions()
 
@@ -114,12 +114,12 @@ class DepartmentViewset(FullModelViewSet):
         return depart
     
     def get_permissions(self):
-        if self.action == "change_owners":
-            self.permission_classes = [IsAuthenticated, IsObjectCreatorOrgCreator]
+        if self.action == self.owner_view_name:
+            self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
         elif self.action in [
             "retrieve", "update", "partial_update", 'destroy'
         ]:
-            self.permission_classes = [IsAuthenticated, CanAccessOrgOrObj]
+            self.permission_classes = [IsAuthenticated, Can_Access_Org_Or_Obj]
         return super().get_permissions()
     
     def get_queryset(self):
