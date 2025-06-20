@@ -4,7 +4,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 from auth_user.lib import validate_account_token_generator
 
 class TestValidationAccountView(BaseTestClass):

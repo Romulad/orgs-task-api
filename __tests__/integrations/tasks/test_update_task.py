@@ -2,7 +2,7 @@ import uuid
 
 from django.forms import model_to_dict
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 from tasks.models import Task
 
 

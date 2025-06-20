@@ -1,6 +1,6 @@
 import uuid
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 
 class TestGetRoleView(BaseTestClass):
     """### Flow

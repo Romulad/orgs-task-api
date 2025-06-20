@@ -19,6 +19,8 @@ from .permissions import IsObjectCreatorOrObj
 
 
 class BulkDeleteResourceMixin:
+    bulk_delete_view_name = "bulk_delete"
+
     @action(
         detail=False,
         methods=[HTTPMethod.DELETE],
@@ -29,6 +31,9 @@ class BulkDeleteResourceMixin:
     def bulk_delete(self, request:Request, *args, **kwargs):
         """Deleted specified ressource by ids. Ids are passed in the request body."""
         return self.perform_bulk_delete(request)
+
+    def get_ressources_queryset(self, ressource_ids):
+        return self.get_queryset().filter(id__in=ressource_ids)
     
     def perform_bulk_delete(self, request:Request):
         """Perform bulk delete of ressources. Use data returned by get_queryset"""
@@ -37,7 +42,7 @@ class BulkDeleteResourceMixin:
         ressource_ids = serializer.data.get('ids')
 
         # get ressources
-        to_be_deleted = self.get_queryset().filter(id__in=ressource_ids)
+        to_be_deleted = self.get_ressources_queryset(ressource_ids)
         if not to_be_deleted:
             return self.get_not_found_error()
         
@@ -48,17 +53,17 @@ class BulkDeleteResourceMixin:
         deleted = [str(deleted.id) for deleted in to_be_deleted]
         not_found = [n_id for n_id in ressource_ids if n_id not in deleted]
         with atomic():
-            deleted_count = to_be_deleted.delete()
+            to_be_deleted.delete()
 
-        if len(ressource_ids) == deleted_count:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(
-            {
-                "deleted": deleted,
-                "not_found": not_found
-            }
-        )
+        if not_found:
+            return Response(
+                {
+                    "deleted": deleted,
+                    "not_found": not_found
+                }
+            )
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangeObjectOwnersMixin:

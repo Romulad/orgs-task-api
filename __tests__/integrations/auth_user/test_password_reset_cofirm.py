@@ -6,7 +6,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 
 class TestPasswordResetConfirmView(BaseTestClass):
   url_name = "password_reset_confirm"

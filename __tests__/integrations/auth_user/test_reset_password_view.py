@@ -2,7 +2,7 @@ import json
 
 from rest_framework import status
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 
 class TestResetPasswordView(BaseTestClass):
   url_name = "password_reset"

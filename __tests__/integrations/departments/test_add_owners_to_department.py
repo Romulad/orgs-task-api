@@ -1,6 +1,6 @@
 import uuid
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 from organization.models import Organization, Department
 
 class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):

@@ -1,6 +1,6 @@
 import uuid
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 from perms.models import UserPermissions
 from app_lib.app_permssions import get_perm_list
 

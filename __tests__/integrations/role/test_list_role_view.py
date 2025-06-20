@@ -1,4 +1,4 @@
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 
 class TestListRoleView(BaseTestClass):
     """### Flow

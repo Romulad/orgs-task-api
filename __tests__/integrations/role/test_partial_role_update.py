@@ -1,6 +1,6 @@
 import uuid
 
-from ..base_classe import BaseTestClass
+from ...base_classe import BaseTestClass
 from django.forms.models import model_to_dict
 
 from app_lib.app_permssions import get_perm_list
