@@ -64,12 +64,16 @@ class ValidateNewUserAccountView(APIView):
       Email is automatically send when user link is invalid and user 
       account still inactive
       """
-      user_email = force_str(urlsafe_base64_decode(uuid))
-      user_model = get_user_model()
       bad_response = Response(
         {"message": "Invalid or expired url"},
         status.HTTP_400_BAD_REQUEST
       )
+      try:
+        user_email = force_str(urlsafe_base64_decode(uuid))
+      except:
+        user_email = ""
+        
+      user_model = get_user_model()
 
       try:
         user = get_object_or_404(user_model, email=user_email)
