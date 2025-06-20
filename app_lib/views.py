@@ -100,6 +100,13 @@ class DefaultModelViewSet(ModelViewSet):
     filterset_class=None
     ordering_fields=None
     queryset=None
+    # actions name
+    create_view_name = "create"
+    update_view_name = "update"
+    partial_update_view_name = "partial_update"
+    retrieve_view_name = "retrieve"
+    list_view_name = "list"
+    delete_view_name = "destroy"
 
     def get_access_allowed_queryset(
             self, 

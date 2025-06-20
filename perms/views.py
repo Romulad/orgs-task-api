@@ -69,16 +69,20 @@ class RoleViewSet(FullModelViewSet):
     ordering_fields = ['name', 'description', 'created_at', 'org__name']
 
     def get_serializer_class(self):
-        if self.action == "create":
+        if self.action == self.create_view_name:
             return CreateRoleSerializer
-        elif self.action == "retrieve":
+        elif self.action == self.retrieve_view_name:
             return RoleDetailSerializer
-        elif self.action in ["update", "partial_update"]:
+        elif self.action in [self.update_view_name, self.partial_update_view_name]:
             return UpdateRoleSerializer
         return super().get_serializer_class()
     
     def get_permissions(self):
-        if self.action in ["update", "partial_update", "destroy"]:
+        if self.action in [
+            self.update_view_name, 
+            self.partial_update_view_name, 
+            self.delete_view_name
+        ]:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Or_Obj]
         elif self.action == self.owner_view_name:
             self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
