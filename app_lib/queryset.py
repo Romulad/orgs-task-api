@@ -68,7 +68,7 @@ class ModelDefaultQuerysets:
         default=False, 
         only_select_related=False,
         only_prefetch_related=False
-    ):      
+    ) -> QuerySet[Organization]:      
         return self.get_model_queryset(
             Organization,
             default=default,

@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import AppUser
 from app_lib.password import generate_password, validate_password
 from .lib import send_account_created_notification
+from .lib import get_user_authorizations_per_org
 
 class UserSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
@@ -25,12 +26,17 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserDetailSerializer(UserSerializer):
     can_be_accessed_by = UserSerializer(many=True, read_only=True)
+    authorizations = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
         fields = [
             *UserSerializer.Meta.fields,
-            "can_be_accessed_by"
+            "can_be_accessed_by",
+            "authorizations"
         ]
+    
+    def get_authorizations(self, user):
+        return get_user_authorizations_per_org(user)
 
 
 class CreateUserSerializer(UserDetailSerializer):
@@ -113,7 +119,7 @@ class UpdateUserSerializer(UserDetailSerializer):
         user_model = get_user_model()
         if user_model.objects.filter(email=email).exists():
             raise serializers.ValidationError(
-                "A user with that email already exists."
+                _("A user with that email already exists.")
             )
         return email
 

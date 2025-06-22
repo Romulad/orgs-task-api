@@ -6,7 +6,7 @@ from organization.models import Department, Organization
 from user.models import AppUser as User
 from tags.models import Tag
 from tasks.models import Task
-from perms.models import Role
+from perms.models import Role, UserPermissions
 
 class TestModelHelpers:
 
@@ -102,3 +102,20 @@ class TestModelHelpers:
             created_by = new_creator
         )
         return new_creator, role
+
+    def create_new_permission(self, org, user=None, creator=None):
+        """
+        Create permission object for `user` if specified or a new permission object for a new user 
+        in `org`, return in order: 
+        - the `user` the permission was created for 
+        - creator 
+        - permission object
+        """
+        new_creator = self.create_and_activate_random_user() if not creator else creator
+        target_user = self.create_and_activate_random_user() if not user else user
+        permission, _ = UserPermissions.objects.get_or_create(
+            user = target_user,
+            org = org,
+            created_by = new_creator
+        )
+        return target_user, new_creator, permission

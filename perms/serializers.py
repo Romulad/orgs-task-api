@@ -4,10 +4,24 @@ from django.utils.translation import gettext_lazy as _
 from app_lib.queryset import queryset_helpers
 from app_lib.fields import ManyPrimaryKeyRelatedField
 from app_lib.authorization import auth_checker
-from .models import Role
+from .models import Role, UserPermissions
 from user.serializers import UserSerializer
 from organization.serializers import OrganizationSerializer
-from app_lib.app_permssions import permissions_exist
+from app_lib.app_permssions import permissions_exist, get_perm_data
+
+class SimpleUserPermissionSerializer(serializers.ModelSerializer):
+    perms = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserPermissions
+        fields = [
+            "perms"
+        ]
+    
+    def get_perms(self, user_perm:UserPermissions):
+        user_perms = user_perm.get_perms()
+        return get_perm_data(user_perms)
+
 
 class AddPermissionsSerializer(serializers.Serializer):
     org = serializers.PrimaryKeyRelatedField(
@@ -71,11 +85,10 @@ class RemovePermissionsSerializer(AddPermissionsSerializer):
         return perms_tuple
 
 
-class RoleSerializer(serializers.ModelSerializer):
+class SimpleRoleSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
     description = serializers.ReadOnlyField()
-    org = OrganizationSerializer(read_only=True)
     created_at = serializers.ReadOnlyField()
     perms = serializers.ReadOnlyField()
     class Meta:
@@ -85,7 +98,6 @@ class RoleSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "perms",
-            "org",
             "created_at"
         ]
     
@@ -93,6 +105,16 @@ class RoleSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation["perms"] = instance.get_perms()
         return representation
+    
+
+class RoleSerializer(SimpleRoleSerializer):
+    org = OrganizationSerializer(read_only=True)
+    class Meta:
+        model = Role
+        fields = [
+            *SimpleRoleSerializer.Meta.fields,
+            "org",
+        ]
 
 
 class RoleDetailSerializer(RoleSerializer):

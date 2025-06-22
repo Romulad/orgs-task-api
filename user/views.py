@@ -22,25 +22,27 @@ class UserViewSet(FullModelViewSet):
     filterset_class= UserDataFilter
 
     def get_serializer_class(self):
-        if self.action in ["update", "partial_update"]:
+        if self.action in [
+            self.update_view_name, self.partial_update_view_name
+        ]:
             return UpdateUserSerializer
         return super().get_serializer_class()
 
     def get_serializer(self, *args, **kwargs):
-        if self.action == "create":
+        if self.action == self.create_view_name:
             kwargs["context"] = self.get_serializer_context()
             return CreateUserSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
 
     def get_queryset(self):
-        if self.action == "list":
+        if self.action == self.list_view_name:
             return self.get_access_allowed_queryset(
                 with_self_data=False
             )
         return self.get_access_allowed_queryset()
     
     def get_permissions(self):
-        if self.action in ["destroy", 'bulk_delete']:
+        if self.action in [self.delete_view_name, self.bulk_delete_view_name]:
             self.permission_classes = [IsAuthenticated, Is_Object_Creator_Or_Obj]
         return super().get_permissions()
 
