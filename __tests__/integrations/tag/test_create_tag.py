@@ -2,6 +2,7 @@ import uuid
 
 from ...base_classe import BaseTestClass
 from tags.models import Tag
+from app_lib.app_permssions import CAN_CREATE_TAG
 
 class TestCreateTagView(BaseTestClass):
     """### Flow
@@ -85,10 +86,14 @@ class TestCreateTagView(BaseTestClass):
         can_access_org_user = self.create_and_activate_random_user()
         self.org.can_be_accessed_by.add(can_access_org_user)
 
+        user_with_perm, _, perm_obj = self.create_new_permission(self.org)
+        perm_obj.add_permissions(CAN_CREATE_TAG)
+
         for user in [
             can_access_org_user,
             self.owner,
-            self.creator
+            self.creator,
+            user_with_perm
         ]:
             req_data = {
                 "name": user.email,

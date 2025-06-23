@@ -6,6 +6,7 @@ from organization.serializers import OrganizationSerializer
 from user.serializers import UserSerializer
 from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
+from app_lib.app_permssions import CAN_CREATE_TAG
 from app_lib.common_error_messages import ORG_ACCESS_ISSUE_MESSAGE
 
 class TagSerializer(serializers.ModelSerializer):
@@ -53,11 +54,20 @@ class CreateTagSerializer(TagDetailSerializer):
      
     def validate_org(self, org):
         user = self.context['request'].user
-        if not auth_checker.has_access_to_obj(org, user):
-            raise serializers.ValidationError(
-                ORG_ACCESS_ISSUE_MESSAGE
-            )
-        return org
+        error_obj = serializers.ValidationError(
+            ORG_ACCESS_ISSUE_MESSAGE
+        )
+
+        if auth_checker.has_access_to_obj(org, user):
+            return org
+        
+        if (
+            not self.instance and 
+            auth_checker.has_permission(user, org, CAN_CREATE_TAG)
+        ):
+            return org
+        
+        raise error_obj
     
     def assert_name_uniqueness(self, name, org_id):
         if Tag.objects.filter(

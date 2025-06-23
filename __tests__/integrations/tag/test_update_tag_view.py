@@ -2,6 +2,7 @@ import uuid
 
 from ...base_classe import BaseTestClass
 from django.forms.models import model_to_dict
+from app_lib.app_permssions import CAN_CREATE_TAG
 
 
 class TestUpdateTagView(BaseTestClass):
@@ -58,6 +59,9 @@ class TestUpdateTagView(BaseTestClass):
         self.assertIsNotNone(data.get("detail"))
     
     def test_not_access_allowed_user_cant_update_tag(self):
+        user_with_create_perm, _, perm_obj = self.create_new_permission(self.org)
+        perm_obj.add_permissions(CAN_CREATE_TAG)
+        
         simple_user = self.create_and_activate_random_user()
         another_owner, another_creator, _ = self.create_new_org()
 
@@ -72,7 +76,8 @@ class TestUpdateTagView(BaseTestClass):
             another_owner,
             another_creator,
             depart_creator,
-            can_access_depart_user
+            can_access_depart_user,
+            user_with_create_perm
         ]:
             response = self.auth_put(user, self.req_data, [self.target_tag.id])
             self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
