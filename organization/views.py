@@ -24,11 +24,12 @@ from app_lib.permissions import (
     Can_Access_Org_Or_Obj
 )
 from app_lib.global_serializers import (
-    BulkDeleteResourceSerializer,
     ChangeUserOwnerListSerializer
 )
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
+from app_lib.authorization import auth_checker
+from app_lib.app_permssions import CAN_CREATE_DEPART
 
 class OrganizationViewset(FullModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -38,9 +39,7 @@ class OrganizationViewset(FullModelViewSet):
     queryset=queryset_helpers.get_org_queryset().order_by("created_at")
 
     def get_serializer_class(self):
-        if self.action == "bulk_delete":
-            return BulkDeleteResourceSerializer
-        elif self.action == 'retrieve':
+        if self.action == 'retrieve':
             return OrganizationDetailSerializer
         return super().get_serializer_class()
     
@@ -95,13 +94,16 @@ class DepartmentViewset(FullModelViewSet):
         context = kwargs.get('context', {})
         context["user"] = user
         kwargs["context"] = context
-        if self.action == "create":
+        if self.action == self.create_view_name:
             org_id = self.kwargs["id"]
             org = self.get_related_org_data_or_404(org_id)
             context["org"] = org
             kwargs["context"] = context
             return CreateDepartmentSerializer(*args, **kwargs)
-        elif self.action in ["update", "partial_update"]:
+        elif self.action in [
+            self.update_view_name, 
+            self.partial_update_view_name
+        ]:
             return UpdateDepartmentSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
     
@@ -117,7 +119,10 @@ class DepartmentViewset(FullModelViewSet):
         if self.action == self.owner_view_name:
             self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
         elif self.action in [
-            "retrieve", "update", "partial_update", 'destroy'
+            self.retrieve_view_name, 
+            self.update_view_name, 
+            self.partial_update_view_name, 
+            self.delete_view_name
         ]:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Or_Obj]
         return super().get_permissions()
@@ -139,19 +144,24 @@ class DepartmentViewset(FullModelViewSet):
 
     def get_related_org_data(self, org_id):
         user = self.request.user
-        org = Organization.objects.filter(
-            Q(
-                Q(created_by=user) | 
-                Q(owner=user) | 
-                Q(can_be_accessed_by__in=[user])
-            ),
-            id=org_id,
-        ).prefetch_related(
-            "members", "can_be_accessed_by"
-        ).select_related(
-            "owner", "created_by"
+
+        org = queryset_helpers.get_org_queryset().filter(
+            id=org_id
         )
-        return org[0] if org else None
+        if not org:
+            return None
+        
+        org = org[0]
+        
+        if auth_checker.has_access_to_obj(org, user):
+            return org
+        
+        if auth_checker.has_permission(
+            user, org, CAN_CREATE_DEPART
+        ):
+            return org
+        
+        return None
     
     def get_related_org_data_or_404(self, org_id):
         org = self.get_related_org_data(org_id)

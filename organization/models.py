@@ -59,7 +59,7 @@ class Department(AbstractBaseModel):
   class Meta:
     verbose_name = _('Department')
     verbose_name_plural = _('Departments')
-    unique_together = ["name", "org"]
+    unique_together = ("name", "org")
 
   def __str__(self):
     return f"{self.name}"
