@@ -4,6 +4,7 @@ from django.forms import model_to_dict
 
 from ...base_classe import BaseTestClass
 from tasks.models import Task
+from app_lib.app_permssions import CAN_CREATE_TASK
 
 
 class TestUpdateTaskView(BaseTestClass):
@@ -113,6 +114,13 @@ class TestUpdateTaskView(BaseTestClass):
             response = self.auth_put(user, {}, [self.target_task.id])
             self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
             self.assertIsNotNone(response.data.get("detail", None))
+
+    def test_user_with_can_create_task_perm_can_not_update_data(self):
+        user_with_create_perm, _, perm_obj = self.create_new_permission(self.org)
+        perm_obj.add_permissions(CAN_CREATE_TASK)
+        response = self.auth_put(user_with_create_perm, {}, [self.target_task.id])
+        self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        self.assertIsNotNone(response.data.get("detail", None))
     
     def test_simple_assigned_to_user_cant_update_task(self):
         self.target_task.assigned_to.add(self.simple_user)

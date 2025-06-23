@@ -9,7 +9,11 @@ from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
 from tags.serializers import TagSerializer
 from app_lib.fn import get_diff_objs
-from app_lib.fields import ManyPrimaryKeyRelatedField, DefaultDateTimeField
+from app_lib.fields import (
+    ManyPrimaryKeyRelatedField, 
+    DefaultDateTimeField
+)
+from app_lib.app_permssions import CAN_CREATE_TASK
 
 # TODO: nested db fectch for create and update view
 
@@ -233,14 +237,24 @@ class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
     
     def validate_org(self, org:Organization):
         """
-        Validate that the user has full access to the organization.
+        Validate whether the user has full access to the organization.
+        Also user with create permission can only create task.
         """
         user = self.context['request'].user
-        if not auth_checker.has_access_to_obj(org, user):
-            raise serializers.ValidationError(
-                _("You do not have permission to create tasks in this organization.")
-            )
-        return org
+        error_obj = serializers.ValidationError(
+            _("You do not have permission to create tasks in this organization.")
+        )
+
+        if auth_checker.has_access_to_obj(org, user):
+            return org
+        
+        if (
+            not self.instance and 
+            auth_checker.has_permission(user, org, CAN_CREATE_TASK)
+        ):
+            return org
+        
+        raise error_obj
 
     def validate(self, attrs:dict):
         self.validate_tags_user_depart_against_org(attrs)

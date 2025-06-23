@@ -4,6 +4,7 @@ from ...base_classe import BaseTestClass
 from tasks.models import Task
 from tags.models import Tag
 from organization.models import Department, Organization
+from app_lib.app_permssions import CAN_CREATE_TASK
 
 
 class TestCreateTaskView(BaseTestClass):
@@ -34,6 +35,7 @@ class TestCreateTaskView(BaseTestClass):
     - test assigned_to get automatically added to org members if not existed by default
     - test task is created with created_by field set to the user creating the task
     - test task is successfully created with needed data and needed response is returned
+    - test user with permission can create task in org
     """
     url_name = "tasks-list"
     task_data = [
@@ -54,12 +56,7 @@ class TestCreateTaskView(BaseTestClass):
         )
 
     def setUp(self):
-        self.owner_user = self.create_and_active_user(email="owner_user@dshgd.com")
-        self.org = Organization.objects.create(
-            name="owner_org", 
-            owner=self.owner_user, 
-            created_by=self.owner_user
-        )
+        self.owner_user, self.org_creator, self.org = self.create_new_org()
         self.another_org = Organization.objects.create(
             name="another_org", 
             owner=self.owner_user, 
@@ -310,3 +307,28 @@ class TestCreateTaskView(BaseTestClass):
         self.assertIn(self.simple_user, new_task.assigned_to.all())
         self.assertEqual(new_task.priority, req_data["priority"])
         self.assertEqual(new_task.status, req_data["status"])
+    
+    def test_other_access_allow_users_can_create_task_in_org(self):
+        # can_access_org_user
+        self.org.can_be_accessed_by.add(self.simple_user)
+        # user with permission to create task
+        user_wth_perm, _, perm_obj = self.create_new_permission(self.org)
+        perm_obj.add_permissions(CAN_CREATE_TASK)
+
+        req_data = {
+            "name": "random_task_name",
+            "org": self.org.id,
+        }
+
+        for user in [
+            self.org_creator,
+            self.simple_user,
+            user_wth_perm
+        ]:
+            req_data['name'] = req_data['name'] + user.email
+            response = self.auth_post(user, req_data)
+            self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+            # assert response data
+            response_data = self.loads(response.content)
+            self.assertEqual(response_data["name"], req_data["name"])
+            self.assertEqual(response_data["org"], str(self.org.id))
