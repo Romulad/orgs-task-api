@@ -1,8 +1,11 @@
 from django.db.transaction import atomic
+from django.contrib.auth import get_user_model
 
 from perms.models import UserPermissions
-from .queryset import queryset_helpers
-from .app_permssions import permissions_exist
+from .queryset import queryset_helpers, Organization
+from .app_permssions import permissions_exist, get_perm_list
+
+User = get_user_model()
 
 class AuthorizationChecker:
 
@@ -124,5 +127,56 @@ class AuthorizationChecker:
             perm_obj.remove_permissions(to_remove)
         
         return to_remove, not_found
+    
+    def has_permission(
+        self,
+        user:User,
+        org:Organization, 
+        perm:str
+    ):
+        """
+        Check wether the user has a perm in the organization.
+        Args:
+            user: the user object
+            org: the target org object
+            perm: string representing the permission
+        Returns:
+            bool: wether or not the user has the permission
+        """
+        exist, found, _, = permissions_exist(perm)
+        if not exist or not found:
+            return False
+
+        # creator has all perms by default
+        creator_id = getattr(org.created_by, 'id', None) 
+        if creator_id == user.id:
+            return True
+        
+        target_perm = found[0]
+
+        # owners have default perms by default
+        is_default_perm = target_perm in get_perm_list(default_only=True)
+        owner_id = getattr(org.owner, 'id', None)
+        if (
+            owner_id == user.id or 
+            user in org.can_be_accessed_by.all()
+        ) and is_default_perm:
+            return True
+
+        if queryset_helpers.get_user_permission_queryset(default=True).filter(
+            user=user, 
+            org=org, 
+            perms__icontains=target_perm
+        ).exists():
+            return True
+
+        if queryset_helpers.get_role_queryset(default=True).filter(
+            org=org, 
+            users=user, 
+            perms__icontains=target_perm
+        ).exists():
+            return True
+        
+        return False
 
 auth_checker = AuthorizationChecker()
