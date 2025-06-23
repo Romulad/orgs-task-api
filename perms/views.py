@@ -15,7 +15,7 @@ from .serializers import (
     UpdateRoleSerializer
 )
 from .filters import RoleDataFilter
-from app_lib.app_permssions import APP_PERMISSIONS
+from app_lib.app_permssions import ALL_PERMS
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 from app_lib.permissions import (
@@ -28,7 +28,7 @@ from app_lib.permissions import (
 @api_view([HTTPMethod.GET])
 @permission_classes([IsAuthenticated])
 def get_permissions_data(request):
-    return Response(APP_PERMISSIONS)
+    return Response(ALL_PERMS)
 
 
 class AddPermissionView(GenericAPIView):

@@ -1,6 +1,5 @@
 from ...base_classe import BaseTestClass
-from perms.models import UserPermissions
-from app_lib.app_permssions import APP_PERMISSIONS
+from app_lib.app_permssions import ALL_PERMS
 
 
 class TestGetPermsDataView(BaseTestClass):
@@ -20,4 +19,4 @@ class TestGetPermsDataView(BaseTestClass):
         response = self.auth_get(user)
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content)
-        self.assertDictEqual(data, APP_PERMISSIONS)
+        self.assertDictEqual(data, ALL_PERMS)
