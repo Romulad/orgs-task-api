@@ -1,5 +1,9 @@
+from http import HTTPMethod
+
 from django.db.models.query import Q
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
@@ -7,7 +11,8 @@ from tasks.serializers import (
     TaskSerializer, 
     TaskDetailSerializer, 
     CreateTaskSerializer,
-    UpdateTaskSeriliazer
+    UpdateTaskSeriliazer,
+    UpdateTaskStatusSerializer
 )
 from app_lib.permissions import Can_Access_Org_Depart_Or_Obj
 from .filters import TaskDataFilter
@@ -53,3 +58,17 @@ class TaskViewSet(FullModelViewSet):
         ]:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
         return super().get_permissions()
+
+    @action(
+        detail=True,
+        methods=[HTTPMethod.PATCH],
+        url_name="update-status",
+        url_path='update-status',
+        serializer_class=UpdateTaskStatusSerializer
+    )
+    def update_status(self, request, **kwargs):
+        obj = self.get_object()
+        serializer = self.get_serializer(obj, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

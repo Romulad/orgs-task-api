@@ -409,3 +409,18 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
             self.check_and_update_org_members(assigned_to, instance.org)
             
         return updated
+
+
+class UpdateTaskStatusSerializer(TaskSerializer):
+    """
+    Use to allow `assigned_to` user to be able to update task status
+    """
+    status = serializers.ChoiceField(
+        choices=Task.Status,
+        required=True,
+        allow_blank=False,
+        help_text=_("Current status of the task"),
+        error_messages={
+            'invalid_choice': _("Invalid status choice."),
+        }
+    )
