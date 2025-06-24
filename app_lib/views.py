@@ -10,12 +10,16 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.db.models.query import Q
 from django.http.response import Http404
+from django.shortcuts import get_object_or_404
 
 from .global_serializers import (
     BulkDeleteResourceSerializer,
     ChangeUserOwnerListSerializer
 )
-from .permissions import Is_Object_Creator_Or_Obj
+from .authorization import auth_checker
+from .app_permssions import CAN_CHANGE_RESSOURCES_OWNERS
+from .permissions import Is_Object_Or_Org_Or_Depart_Creator
+from organization.models import Organization
 
 
 class BulkDeleteResourceMixin:
@@ -72,7 +76,7 @@ class ChangeObjectOwnersMixin:
     @action(
         detail=True, 
         methods=[HTTPMethod.POST],
-        permission_classes=[IsAuthenticated, Is_Object_Creator_Or_Obj],
+        permission_classes=[IsAuthenticated, Is_Object_Or_Org_Or_Depart_Creator],
         url_name="change-owners",
         url_path="change-owners",
         serializer_class=ChangeUserOwnerListSerializer
@@ -83,7 +87,7 @@ class ChangeObjectOwnersMixin:
         **Only for user data**: User itself can set owner users, owner added by the creator or user itself 
         can't delete user data"""
         user = request.user
-        target_obj = self.get_object()
+        target_obj = self.get_obj_to_change_owners_for()
         context = {"user": user}
         serializer = self.get_serializer(
             target_obj, data=request.data, context=context
@@ -92,6 +96,29 @@ class ChangeObjectOwnersMixin:
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
+    def get_obj_to_change_owners_for(self):
+        """
+        Get the target object and check if user has permission to change 
+        owners, may raise a permission error.
+        """
+        user = self.request.user
+        obj = self.get_raw_object()
+
+        # check if the user has CAN_CHANGE_RESSOURCES_OWNERS perm in the org otherwise 
+        # apply the default permission checking
+        has_org = hasattr(obj, 'org') and getattr(obj.org, 'id', None)
+        if (
+            isinstance(obj, Organization) and
+            auth_checker.has_permission(user, obj, CAN_CHANGE_RESSOURCES_OWNERS)
+        ):
+            return obj
+        elif (
+            has_org and 
+            auth_checker.has_permission(user, obj.org, CAN_CHANGE_RESSOURCES_OWNERS)
+        ):
+            return obj
+
+        return self.get_object()   
 
 class DefaultModelViewSet(ModelViewSet):
     """Extends `ModelViewSet` to add common methods needed in the system"""
@@ -107,6 +134,30 @@ class DefaultModelViewSet(ModelViewSet):
     retrieve_view_name = "retrieve"
     list_view_name = "list"
     delete_view_name = "destroy"
+
+    def get_raw_object(self):
+        """
+        Returns the object to use in a detail view without filtering.
+        Raise not found error if needed.
+        """
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+
+        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        return get_object_or_404(self.get_raw_queryset(), **filter_kwargs)
+
+    def get_raw_queryset(self):
+        """
+        Returns the queryset without any filtering as provided in
+        `.queryset` attribute. 
+        """
+        return super().get_queryset()
 
     def get_access_allowed_queryset(
             self, 
@@ -164,7 +215,7 @@ class DefaultModelViewSet(ModelViewSet):
 class FullModelViewSet(
     DefaultModelViewSet, 
     BulkDeleteResourceMixin, 
-    ChangeObjectOwnersMixin
+    ChangeObjectOwnersMixin,
 ):
     """Add common behavior needed by a typical model in the system"""
     pass

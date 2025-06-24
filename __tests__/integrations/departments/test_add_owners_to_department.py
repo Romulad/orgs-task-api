@@ -2,6 +2,7 @@ import uuid
 
 from ...base_classe import BaseTestClass
 from organization.models import Organization, Department
+from app_lib.app_permssions import CAN_CHANGE_RESSOURCES_OWNERS
 
 class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):
     """### Flow
@@ -169,3 +170,21 @@ class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):
             self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
             access_allowed = Department.objects.get(id=target_depart.id).can_be_accessed_by.all()
             self.assertEqual(len(access_allowed), 1)
+    
+    def test_user_with_permission_can_change_own_obj_access(self):
+        target_depart = self.created_departs[0]
+
+        user_with_perm, _, perm_obj = self.create_new_permission(self.org)
+        perm_obj.add_permissions(CAN_CHANGE_RESSOURCES_OWNERS)
+
+        simple_user = self.create_and_activate_random_user()
+        simple_user.can_be_accessed_by.add(user_with_perm)
+
+        req_data = {
+            "owner_ids": [simple_user.id]
+        }
+
+        response = self.auth_post(user_with_perm, req_data, [self.org.id, target_depart.id])
+        self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
+        access_allowed = Department.objects.get(id=target_depart.id).can_be_accessed_by.all()
+        self.assertEqual(len(access_allowed), 1)

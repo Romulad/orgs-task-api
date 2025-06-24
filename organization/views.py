@@ -20,7 +20,7 @@ from .filters import (
 from .models import Organization
 from app_lib.permissions import (
     Can_Access_ObjectInstance,
-    Is_Object_Creator_Org_Creator,
+    Is_Object_Or_Org_Or_Depart_Creator,
     Can_Access_Org_Or_Obj
 )
 from app_lib.global_serializers import (
@@ -39,13 +39,15 @@ class OrganizationViewset(FullModelViewSet):
     queryset=queryset_helpers.get_org_queryset().order_by("created_at")
 
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action == self.retrieve_view_name:
             return OrganizationDetailSerializer
         return super().get_serializer_class()
     
     def get_serializer(self, *args, **kwargs):
         if self.action in [
-            "create", "update", "partial_update"
+            self.create_view_name, 
+            self.update_view_name, 
+            self.partial_update_view_name
         ]:
             user = self.request.user
             context = kwargs.get("context", {})
@@ -53,7 +55,7 @@ class OrganizationViewset(FullModelViewSet):
             kwargs["context"] = context
         if self.action == "create":
             return CreateOrganizationSerializer(*args, **kwargs)
-        elif self.action in ["update", "partial_update"]:
+        elif self.action in [self.update_view_name, self.partial_update_view_name]:
             return UpdateOrganizationSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
 
@@ -67,7 +69,10 @@ class OrganizationViewset(FullModelViewSet):
 
     def get_permissions(self):
         if self.action in [
-            "update", "partial_update", "retrieve", "destroy"
+            self.update_view_name, 
+            self.partial_update_view_name, 
+            self.retrieve_view_name, 
+            self.delete_view_name
         ]:
             self.permission_classes = [
                 IsAuthenticated, Can_Access_ObjectInstance
@@ -81,11 +86,12 @@ class DepartmentViewset(FullModelViewSet):
     filterset_class = DepartmentDataFilter
     ordering_fields=['name', "description", "created_at"]
     queryset = queryset_helpers.get_depart_queryset().order_by("created_at")
+    lookup_url_kwarg = "depart_id"
 
     def get_serializer_class(self):
-        if self.action == "change_owners":
+        if self.action == self.owner_view_name:
             return ChangeUserOwnerListSerializer
-        elif self.action == "retrieve":
+        elif self.action == self.retrieve_view_name:
             return DepartmentDeailSerializer
         return super().get_serializer_class()
 
@@ -117,8 +123,8 @@ class DepartmentViewset(FullModelViewSet):
     
     def get_permissions(self):
         if self.action == self.owner_view_name:
-            self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
-        elif self.action in [
+            self.permission_classes = [IsAuthenticated, Is_Object_Or_Org_Or_Depart_Creator]
+        if self.action in [
             self.retrieve_view_name, 
             self.update_view_name, 
             self.partial_update_view_name, 
@@ -168,4 +174,10 @@ class DepartmentViewset(FullModelViewSet):
         if not org:
             self.raise_not_found_error()
         return org
+
+    def get_obj_to_change_owners_for(self):
+        obj = super().get_obj_to_change_owners_for()
+        # ensure the org exists
+        get_object_or_404(Organization, id=self.kwargs["id"])
+        return obj
 

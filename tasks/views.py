@@ -9,7 +9,7 @@ from tasks.serializers import (
     CreateTaskSerializer,
     UpdateTaskSeriliazer
 )
-from app_lib.permissions import Can_Access_Org_Depart_Or_Obj, Is_Object_Or_Org_OrDepart_Creator
+from app_lib.permissions import Can_Access_Org_Depart_Or_Obj
 from .filters import TaskDataFilter
 
 class TaskViewSet(FullModelViewSet):
@@ -19,11 +19,14 @@ class TaskViewSet(FullModelViewSet):
     ordering_fields = ['name', 'description', "created_at", "status", 'priority']
 
     def get_serializer_class(self):
-        if self.action == "retrieve":
+        if self.action == self.retrieve_view_name:
             return TaskDetailSerializer
-        elif self.action == "create":
+        elif self.action == self.create_view_name:
             return CreateTaskSerializer
-        elif self.action in ["update", "partial_update"]:
+        elif self.action in [
+            self.update_view_name, 
+            self.partial_update_view_name
+        ]:
             return UpdateTaskSeriliazer
         return super().get_serializer_class()
     
@@ -43,9 +46,10 @@ class TaskViewSet(FullModelViewSet):
     
     def get_permissions(self):
         if self.action in [
-            "destroy", self.bulk_delete_view_name, "update", "partial_update"
+            self.delete_view_name, 
+            self.bulk_delete_view_name, 
+            self.update_view_name, 
+            self.partial_update_view_name,
         ]:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
-        elif self.action == "change_owners":
-            self.permission_classes = [IsAuthenticated, Is_Object_Or_Org_OrDepart_Creator]
         return super().get_permissions()

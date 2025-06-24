@@ -20,7 +20,6 @@ from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 from app_lib.permissions import (
     Can_Access_Org_Or_Obj, 
-    Is_Object_Creator_Org_Creator,
     Can_Access_Org_Depart_Or_Obj
 )
 
@@ -84,8 +83,6 @@ class RoleViewSet(FullModelViewSet):
             self.delete_view_name
         ]:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Or_Obj]
-        elif self.action == self.owner_view_name:
-            self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
         elif self.action == self.bulk_delete_view_name:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
         return super().get_permissions()

@@ -4,7 +4,6 @@ from rest_framework.permissions import IsAuthenticated
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 from app_lib.permissions import (
-    Is_Object_Creator_Org_Creator, 
     Can_Access_Org_Depart_Or_Obj
 )
 from .filters import TagDataFilter
@@ -52,6 +51,4 @@ class TagViewSet(FullModelViewSet):
             self.bulk_delete_view_name
         ]:
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
-        elif self.action == self.owner_view_name:
-            self.permission_classes = [IsAuthenticated, Is_Object_Creator_Org_Creator]
         return super().get_permissions()

@@ -36,6 +36,11 @@ class AuthorizationChecker:
         return True
     
     def has_creator_access_on_obj(self, obj, want_access_obj) -> bool:
+        """
+        Passes when one of the condition below is met:
+            - the object `id` and `want_access_obj` `id` are the same (obj itself)
+            - the object `created_by` is the same as the `want_access_obj` obj
+        """
         want_access_obj_id = want_access_obj.id
         is_allowed = obj.id == want_access_obj_id
 
@@ -45,6 +50,11 @@ class AuthorizationChecker:
         return is_allowed
     
     def has_creator_access_on_objs(self, objs:list, want_access_obj) -> bool:
+        """
+        Passes when one of the condition below is met:
+            - the objects `id` and `want_access_obj` `id` are the same (obj itself)
+            - the objects `created_by` is the same as the `want_access_obj` obj
+        """
         for obj in objs:
             is_allowed = self.has_creator_access_on_obj(obj, want_access_obj)
             if not is_allowed:

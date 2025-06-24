@@ -1,6 +1,7 @@
 import uuid
 
 from ...base_classe import BaseTestClass
+from app_lib.app_permssions import CAN_CHANGE_RESSOURCES_OWNERS
 
 
 class TestChangeRoleOwnerView(BaseTestClass):
@@ -142,3 +143,20 @@ class TestChangeRoleOwnerView(BaseTestClass):
             self.assertIn(self.simple_user, access_allowed)
             # reset for next user
             self.role.can_be_accessed_by.clear()
+    
+    def test_user_with_perm_can_update_owners(self):
+        user_with_perm, _, perm_obj = self.create_new_permission(self.org)
+        perm_obj.add_permissions(CAN_CHANGE_RESSOURCES_OWNERS)
+        
+        self.simple_user.can_be_accessed_by.add(user_with_perm)
+
+        req_data = {
+            "owner_ids": [self.simple_user.id]
+        }
+
+        response = self.auth_post(user_with_perm, req_data, [self.role.id])
+        self.assertEqual(response.status_code, self.status.HTTP_204_NO_CONTENT)
+        self.role.refresh_from_db()
+        access_allowed = self.role.can_be_accessed_by.all()
+        self.assertEqual(len(access_allowed), 1)
+        self.assertIn(self.simple_user, access_allowed)
