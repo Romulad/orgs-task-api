@@ -47,3 +47,9 @@ class AppUser(AbstractBaseModel, AbstractBaseUser):
     class Meta:
         verbose_name = _("user")
         verbose_name_plural = _("users")
+        indexes = [
+            models.Index(fields=[
+                "email", "first_name", "last_name", 
+                "is_active"
+            ])
+        ]

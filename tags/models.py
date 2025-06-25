@@ -26,6 +26,9 @@ class Tag(AbstractBaseModel):
 
     class Meta:
         unique_together = ('name', 'org')
+        indexes = [
+            models.Index(fields=['name'])
+        ]
 
     def __str__(self):
         return self.name

@@ -36,10 +36,9 @@ class AbstractBaseModel(models.Model):
             "Indicate a deleted ressource."
             "Select this instead of deleting ressource."
         ),
-        db_index=True
     )
     created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name=_('created at'), db_index=True
+        auto_now_add=True, verbose_name=_('created at')
     )
     updated_at = models.DateTimeField(
         auto_now=True, verbose_name=_('modified at')
@@ -53,6 +52,9 @@ class AbstractBaseModel(models.Model):
 
     class Meta:
         abstract = True
+        indexes = [
+            models.Index(fields=['is_deleted', 'created_at'])
+        ]
     
     def delete(self, using=None, keep_parents=False):
         # implementation inspiration from django.db.models.deletion

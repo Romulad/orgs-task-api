@@ -97,6 +97,12 @@ class Task(AbstractBaseModel):
     
     class Meta:
         unique_together = ('name', 'org')
+        indexes = [
+            models.Index(fields=[
+                "name", "priority", "status", "due_date",
+                "estimated_duration", "actual_duration"
+            ])
+        ]
 
     def __str__(self):
         return self.name

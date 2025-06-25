@@ -49,3 +49,6 @@ class Role(AbstractBasePermissionModel):
         verbose_name = _("Role")
         verbose_name_plural = _("Roles")
         unique_together = ("name", 'org')
+        indexes = [
+            models.Index(fields=['name'])
+        ]

@@ -31,6 +31,9 @@ class Organization(AbstractBaseModel):
     verbose_name = _('Organization')
     verbose_name_plural = _('Organizations')
     unique_together = ["name", "owner"]
+    indexes = [
+      models.Index(fields=['name'])
+    ]
 
   def __str__(self):
     return f"{self.owner.email}_{self.name}"
@@ -60,6 +63,9 @@ class Department(AbstractBaseModel):
     verbose_name = _('Department')
     verbose_name_plural = _('Departments')
     unique_together = ("name", "org")
+    indexes = [
+      models.Index(fields=['name'])
+    ]
 
   def __str__(self):
     return f"{self.name}"
