@@ -8,8 +8,9 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user need to have access to the org or he is the creator
-    - user in the department can_be_accessed_by attr an delete the depart
+    - user in the department can_be_accessed_by attr can delete the depart
     - no access allowed user can't delete ressource
+    - test depart member can not delete depart
     - ressource is deleted by marking it as is_delete and success response
     - user get not found when ressource not found
     """
@@ -45,6 +46,16 @@ class TestDeleteOrgDepartMentView(BaseTestClass):
 
         response = self.auth_delete(user, {}, [self.org.id, first_depart.id])
         self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        # obj still exists
+        self.assertIsNotNone(Department.objects.get(id=first_depart.id))
+    
+    def test_depart_member_can_not_delete_depart(self):
+        depart_member = self.create_and_activate_random_user()
+        first_depart = self.created_departs[0]
+        first_depart.members.add(depart_member)
+
+        response = self.auth_delete(depart_member, {}, [self.org.id, first_depart.id])
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         # obj still exists
         self.assertIsNotNone(Department.objects.get(id=first_depart.id))
         

@@ -21,7 +21,7 @@ from .models import Organization
 from app_lib.permissions import (
     Can_Access_ObjectInstance,
     Is_Object_Or_Org_Or_Depart_Creator,
-    Can_Access_Org_Or_Obj
+    Can_Access_Org_Depart_Or_Obj
 )
 from app_lib.global_serializers import (
     ChangeUserOwnerListSerializer
@@ -130,12 +130,12 @@ class DepartmentViewset(FullModelViewSet):
         if self.action == self.owner_view_name:
             self.permission_classes = [IsAuthenticated, Is_Object_Or_Org_Or_Depart_Creator]
         if self.action in [
-            self.retrieve_view_name, 
             self.update_view_name, 
             self.partial_update_view_name, 
-            self.delete_view_name
+            self.delete_view_name,
+            self.bulk_delete_view_name
         ]:
-            self.permission_classes = [IsAuthenticated, Can_Access_Org_Or_Obj]
+            self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
         return super().get_permissions()
     
     def get_queryset(self):
@@ -148,7 +148,8 @@ class DepartmentViewset(FullModelViewSet):
                 Q(org__owner=user) |
                 Q(org__can_be_accessed_by__in=[user]) |
                 Q(created_by=user) |
-                Q(can_be_accessed_by__in=[user])
+                Q(can_be_accessed_by__in=[user]) |
+                Q(members=user)
             )
         ).distinct()
         return queryset

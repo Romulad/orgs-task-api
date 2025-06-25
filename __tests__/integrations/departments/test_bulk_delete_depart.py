@@ -9,6 +9,7 @@ class TestBulkDeleteOrgDepartMentView(BaseTestClass):
     - user need to be authenticated
     - request data need to be validate
     - error when user sent request with depart ids that contain id he can not delete
+    - depart member should not be able to delete depart
     - ressources are deleted by marking it as is_delete and success response 204
     - when user make request to delete ressource he has access to and some are not found
     success response should be sent containing what was deleted and what was not found, 
@@ -46,6 +47,16 @@ class TestBulkDeleteOrgDepartMentView(BaseTestClass):
 
         response = self.auth_delete(user, {"ids": depart_ids}, [self.org.id])
         self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        # ressources still exist
+        [Department.objects.get(id=depart_id) for depart_id in depart_ids]
+    
+    def test_depart_member_can_not_delete_data(self):
+        depart_member = self.create_and_active_user()
+        [created.members.add(depart_member) for created in self.created_departs]
+        depart_ids = [created.id for created in self.created_departs]
+
+        response = self.auth_delete(depart_member, {"ids": depart_ids}, [self.org.id])
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         # ressources still exist
         [Department.objects.get(id=depart_id) for depart_id in depart_ids]
     

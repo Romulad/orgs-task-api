@@ -9,6 +9,7 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
     - user get not found when org doesn't exists
     - user get not found when department doesn't exists
     - user need to have access to or is the creator of org before updating org department
+    - test depart member can not update depart data
     - test department name field is unique in the org for new specified name
     - if new org and not members is specified: 
         test user has access to the new specified org and 
@@ -36,8 +37,7 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
     ]
 
     def setUp(self):
-        self.owner_user = self.create_and_active_user(email="owner_user@gmail.com")
-        self.org = Organization.objects.create(name="test", owner=self.owner_user)
+        self.owner_user, self.creator, self.org = self.create_new_org()
         departs_data = [*self.departs_data]
         for data in departs_data:
             data["org"] = self.org
@@ -73,6 +73,27 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
             [self.org.id, depart.id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_404_NOT_FOUND)
+        data = self.loads(response.content)
+        self.assertIsNotNone(data.get("detail", None))
+        # data don't get updated
+        with self.assertRaises(Department.DoesNotExist):
+            Department.objects.get(name=depart.name, description="Some description")
+    
+    def test_depart_member_can_not_update_data(self):
+        depart_member = self.create_and_activate_random_user()
+        depart = self.created_departs[0]
+        depart.members.add(depart_member)
+
+        req_data = {
+            "name": depart.name,
+            "description": "Some description"
+        }
+
+        response = self.auth_patch(
+            depart_member, req_data, 
+            [self.org.id, depart.id]
+        )
+        self.assertEqual(response.status_code, self.status.HTTP_403_FORBIDDEN)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get("detail", None))
         # data don't get updated
