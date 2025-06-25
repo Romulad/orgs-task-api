@@ -6,7 +6,11 @@ class TestListOrgView(BaseTestClass):
     """### Flow
     - user need to be authenticated
     - user can only get orgs he created or have access to
-    - user get data with needed field
+    - user get data with needed field:
+        - org owner
+        - org creator
+        - can_be_accessed_by
+        - members
     - data is paginated
     - data can be filtered and search throught
     """
@@ -23,59 +27,58 @@ class TestListOrgView(BaseTestClass):
         }
     ]
 
+    def setUp(self):
+        self.owner_user = self.create_and_activate_random_user()
+        self.creator = self.create_and_activate_random_user()
+        orgs_data = [*self.orgs_data]
+        for data in orgs_data:
+            data["owner"] = self.owner_user
+            data["created_by"] = self.creator
+        self.orgs = self.bulk_create_object(Organization, orgs_data)
+
     def test_only_authenticated_user_can_access(self):
         self.evaluate_method_unauthenticated_request(
             self.HTTP_GET
         )
     
     def test_user_get_only_created_data(self):
-        other_owner = self.create_and_active_user(email="owner_org@gnail.com")
-        user = self.create_and_active_user()
-
-        orgs_data = [*self.orgs_data]
-        orgs_data[0]["owner"] = user
-        orgs_data[1]["owner"] = other_owner
-        orgs_data[2]["owner"] = other_owner
-        self.bulk_create_object(Organization, orgs_data)
-
-        response = self.auth_get(user)
-        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
-        data = self.loads(response.content).get("results")
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["name"], orgs_data[0]["name"])
-        self.assertEqual(data[0]["owner"]["id"], str(user.id))
+        new_owner, new_creator, org = self.create_new_org()
+        for user in [new_owner, new_creator]:
+            response = self.auth_get(user)
+            self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+            data = self.loads(response.content).get("results")
+            self.assertEqual(len(data), 1)
+            self.assertEqual(data[0]["name"], org.name)
     
     def test_user_get_only_access_true_data(self):
-        # create owner a not owner
-        owner_user = self.create_and_active_user(email="owner_org@gnail.com")
-        user = self.create_and_active_user()
-
-        orgs_data = [*self.orgs_data]
-        for data in orgs_data:
-            data["owner"] = owner_user 
-        orgs = self.bulk_create_object(Organization, orgs_data)
-        orgs[0].can_be_accessed_by.add(user)
-
+        target_org = self.orgs[0]
+        user = self.create_and_activate_random_user()
+        target_org.can_be_accessed_by.add(user)
         response = self.auth_get(user)
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content).get("results")
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["name"], orgs_data[0]["name"])
-        self.assertEqual(data[0]["owner"]["id"], str(owner_user.id))
+        self.assertEqual(data[0]["name"], target_org.name)
+        self.assertEqual(data[0]["owner"]["id"], str(self.owner_user.id))
+    
+    def test_members_can_get_org_data(self):
+        target_org = self.orgs[0]
+        user = self.create_and_activate_random_user()
+        target_org.members.add(user)
+        response = self.auth_get(user)
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        data = self.loads(response.content).get("results")
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["name"], target_org.name)
+        self.assertEqual(data[0]["owner"]["id"], str(self.owner_user.id))
     
     def test_user_get_filtered_data(self):
-        owner_user = self.create_and_active_user()
-        orgs_data = [*self.orgs_data]
-        for data in orgs_data:
-            data["owner"] = owner_user 
-        self.bulk_create_object(Organization, orgs_data)
-
         response = self.auth_get(
-            owner_user, query_params={"name_contain": "2"}
+            self.owner_user, query_params={"name_contain": "2"}
         )
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content).get("results")
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["name"], "my org 2")
-        self.assertEqual(data[0]["owner"]["id"], str(owner_user.id))
+        self.assertEqual(data[0]["owner"]["id"], str(self.owner_user.id))
 

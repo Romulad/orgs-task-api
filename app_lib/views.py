@@ -162,10 +162,15 @@ class DefaultModelViewSet(ModelViewSet):
     def get_access_allowed_queryset(
             self, 
             with_owner_filter=False,
-            with_self_data=True
+            with_self_data=True,
+            filters=None
         ):
         """Return ressources that the user can access"""
         queryset = super().get_queryset()
+
+        if filters:
+            return queryset.filter(filters)
+        
         user = self.request.user
         filters = Q(created_by=user) | Q(can_be_accessed_by__in=[user])
 

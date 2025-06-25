@@ -60,8 +60,12 @@ class OrganizationViewset(FullModelViewSet):
         return super().get_serializer(*args, **kwargs)
 
     def get_queryset(self):
-        return self.get_access_allowed_queryset(
-            with_owner_filter=True, with_self_data=False
+        user = self.request.user
+        return super().get_queryset().filter(
+            Q(created_by=user) |
+            Q(owner=user) |
+            Q(can_be_accessed_by=user) |
+            Q(members=user)
         )
     
     def get_object(self) -> Organization:
@@ -71,12 +75,13 @@ class OrganizationViewset(FullModelViewSet):
         if self.action in [
             self.update_view_name, 
             self.partial_update_view_name, 
-            self.retrieve_view_name, 
-            self.delete_view_name
+            self.delete_view_name,
+            self.bulk_delete_view_name
         ]:
             self.permission_classes = [
                 IsAuthenticated, Can_Access_ObjectInstance
             ]
+        
         return super().get_permissions()
 
 

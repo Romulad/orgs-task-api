@@ -17,7 +17,9 @@ class Can_Access_ObjectInstance(DefaultBasePermission):
 
     def has_object_permission(self, request, view, obj):
         return auth_checker.has_access_to_obj(obj, request.user)
-
+    
+    def has_objects_permission(self, request, view, objs):
+        return auth_checker.has_access_to_objs(objs, request.user)
 
 class Can_Access_Org_Or_Obj(DefaultBasePermission):
     """ Check if a given user has permission to act on the current object 
