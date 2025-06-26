@@ -90,7 +90,9 @@ class DepartmentViewset(FullModelViewSet):
     serializer_class = DepartmentSerializer
     filterset_class = DepartmentDataFilter
     ordering_fields=['name', "description", "created_at"]
-    queryset = queryset_helpers.get_depart_queryset().order_by("created_at")
+    queryset = queryset_helpers.get_depart_queryset(
+        include_nested_selected=True, prefetch_org_can_be_accessed_by=True
+    ).order_by("created_at")
     lookup_url_kwarg = "depart_id"
 
     def get_serializer_class(self):

@@ -19,7 +19,11 @@ from .filters import TaskDataFilter
 
 class TaskViewSet(FullModelViewSet):
     serializer_class = TaskSerializer
-    queryset = queryset_helpers.get_task_queryset().order_by('created_at')
+    queryset = queryset_helpers.get_task_queryset(
+        include_nested_selected=True, 
+        prefetch_org_can_be_accessed_by=True,
+        prefetch_depart_can_be_accessed_by=True
+    ).order_by('created_at')
     filterset_class = TaskDataFilter
     ordering_fields = ['name', 'description', "created_at", "status", 'priority']
 

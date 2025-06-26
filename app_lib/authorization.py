@@ -63,7 +63,7 @@ class AuthorizationChecker:
     
     def has_access_to_org_depart_or_obj(self, obj, want_access_obj):
         """Check if the `want_access_obj` obj has access to the obj
-        org or depart or the obj itself. Org attribute must exist on the obj"""
+        `org` or `depart` or the `obj` itself. `Org` attribute must exist on the obj"""
 
         is_allowed = self.has_access_to_obj(obj, want_access_obj)
 

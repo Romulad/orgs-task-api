@@ -39,9 +39,16 @@ class Organization(AbstractBaseModel):
     return f"{self.owner.email}_{self.name}"
   
   def add_no_exiting_members(self, users):
-      new_users = get_diff_objs(users, self.members.all())
-      if new_users:
-        self.members.add(*new_users)
+    """ Adds users to the organization if they are not already members.
+    This method compares the provided `users` list with the current
+    members of the organization. Only users who are not already members will be added.
+
+    Args:
+      users (Iterable[User]): An iterable of user instances to be added to the organization.
+    """
+    new_users = get_diff_objs(users, self.members.all())
+    if new_users:
+      self.members.add(*new_users)
   
 
 class Department(AbstractBaseModel):

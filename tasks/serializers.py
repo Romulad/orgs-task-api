@@ -8,14 +8,12 @@ from organization.models import Organization
 from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
 from tags.serializers import TagSerializer
-from app_lib.fn import get_diff_objs
 from app_lib.fields import (
     ManyPrimaryKeyRelatedField, 
     DefaultDateTimeField
 )
 from app_lib.app_permssions import CAN_CREATE_TASK
 
-# TODO: nested db fectch for create and update view
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,29 +63,73 @@ class TaskDetailSerializer(TaskSerializer):
 class CreateUpdateTaskBaseSerializer(TaskDetailSerializer):
 
     def check_task_name_already_exists_in_org(self, name, org_id):
+        """
+        Checks if a task with the given name already exists within the specified organization.
+        Args:
+            name (str): The name of the task to check for existence.
+            org_id (uuid): The ID of the organization to search within.
+        Returns:
+            bool: True if a task with the specified name exists in the organization, False otherwise.
+        """
         return Task.objects.filter(name=name, org__id=org_id).exists()
     
     def check_org_owner_has_access_to_assigned_to(self, assigned_to, org):
+        """
+        Checks whether the owner of the given organization has access to the specified 'assigned_to' users.
+        Args:
+            assigned_to (list[User]): The list of users to check access for.
+            org: The organization whose owner's access is being verified.
+        Returns:
+            bool: True if the organization owner has access to all users, False otherwise.
+        """
         return auth_checker.has_access_to_objs(assigned_to, org.owner)
 
-    def check_tags_belong_to_org(self, tags, org):
+    def check_tags_belong_to_org(self, tags, org: Organization):
+        """
+        Checks whether all tags in the provided list belong to the specified organization.
+        Args:
+            tags (Iterable[Tag]): A collection of Tag objects to check.
+            org (Organization): The organization to verify tag ownership against.
+        Returns:
+            bool: True if all tags belong to the given organization, False otherwise.
+        """
         for tag in tags:
             if tag.org.id != org.id:
                 return False
         return True
 
-    def check_depart_belongs_to_org(self, depart, org):
+    def check_depart_belongs_to_org(self, depart, org:Organization):
+        """
+        Checks whether the given department belongs to the specified organization.
+        Args:
+            depart: The department instance to check.
+            org (Organization): The organization instance to compare against.
+        Returns:
+            bool: True if the department belongs to the organization or if depart is None, False otherwise.
+        """
         if depart and depart.org.id != org.id:
             return False
         return True
 
     def check_task_name_uniqueness(self, name, org_id):
+        """
+        Checks whether a task name is unique within a given organization.
+        Args:
+            name (str): The name of the task to check.
+            org_id (uuid): The ID of the organization to check within.
+        Raises:
+            serializers.ValidationError: If a task with the given name already exists in the organization.
+        """
         if self.check_task_name_already_exists_in_org(name, org_id):
             raise serializers.ValidationError(
                 _("A task with this name already exists in the organization.")
             )
 
     def validate_tags_user_depart_against_org(self, attrs):
+        """ Validate that the `tags`, `assigned_to` users, and `depart` belong to 
+        the same organization as the task. If the `org` field is not specified,
+        it will use the organization of the existing task instance if available.
+        """
         org = attrs.get('org')
 
         # validate assigned_to users
@@ -129,10 +171,14 @@ class CreateUpdateTaskBaseSerializer(TaskDetailSerializer):
             ):
                 raise error_obj
     
-    def check_and_update_org_members(self, assigned_to, org):
-        if assigned_to:
-            new_user = get_diff_objs(assigned_to, org.members.all())
-            org.members.add(*new_user)
+    def check_and_update_org_members(self, assigned_to, org:Organization):
+        """ Checks if the users in `assigned_to` are already members of the given `org` (Organization).
+        If not, adds them as new members to the organization.
+        Args:
+            assigned_to (Iterable[User]): A collection of user instances to be checked and potentially added to the organization.
+            org (Organization): The organization to which users may be added.
+        """
+        org.add_no_exiting_members(assigned_to)
 
 
 class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
@@ -149,11 +195,10 @@ class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
         allow_blank=True,
         help_text=_("Detailed description of the task"),
     )
-    assigned_to = serializers.PrimaryKeyRelatedField(
-        many=True,
+    assigned_to = ManyPrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
         required=False,
-        allow_null=True,
+        allow_empty=True,
         help_text=_("Users assigned to this task"),
     )
     due_date = serializers.DateTimeField(
@@ -193,11 +238,12 @@ class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
             'invalid': _("Enter a valid duration."),
         }
     )
-    tags = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=queryset_helpers.get_tag_queryset(only_select_related=True),
+    tags = ManyPrimaryKeyRelatedField(
+        queryset=queryset_helpers.get_tag_queryset(
+            only_select_related=True
+        ),
         required=False,
-        allow_null=True,
+        allow_empty=True,
         help_text=_("Tags associated with the task"),
         error_messages={
             'does_not_exist': _("One or more specified tags do not exist."),
@@ -231,23 +277,27 @@ class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
             raise serializers.ValidationError(
                 {"org": [_("This field is required.")]}
             )
-        # if org_id is not valid org id, the `org` field on the serializer will raise an error
+        # if org_id is not a valid org id, the `org` field on the serializer will raise an error
         self.check_task_name_uniqueness(value, org_id)
         return value
     
     def validate_org(self, org:Organization):
         """
         Validate whether the user has full access to the organization.
-        Also user with create permission can only create task.
+        Also user with `CAN_CREATE_TASK` permission can only create task.
         """
         user = self.context['request'].user
         error_obj = serializers.ValidationError(
             _("You do not have permission to create tasks in this organization.")
         )
-
+        
+        # this is mandatory check when a user specified a new org, must have access to it
         if auth_checker.has_access_to_obj(org, user):
             return org
         
+        # Only apply this check when the user is creating a new task
+        # and does not have access to the organization
+        # but has permission to create tasks in the organization
         if (
             not self.instance and 
             auth_checker.has_permission(user, org, CAN_CREATE_TASK)
@@ -340,6 +390,12 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
     )
     
     def validate_name(self, value):
+        """
+        Validates the 'name' field for uniqueness within the specified organization.
+        If the provided name is unchanged from the current instance, it is accepted.
+        Otherwise, checks if the name is unique within the organization, using the 'org'
+        field from the initial data if available, or the organization of the current instance.
+        """
         if self.instance.name == value:
             return value
         
@@ -352,6 +408,9 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
         return value
 
     def validate_org(self, org):
+        """
+        Validates the organization (`org`) associated with the serializer instance.
+        """
         if self.instance.org.id == org.id:
             return org
         
@@ -360,7 +419,10 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
         # validation against existing instance assigned_to, depart, tags, name.
         # only apply validation on existing instance attrs when the given field 
         # is not specified in the request data otherwise let the validation to the
-        # field validation step
+        # field validation step.
+        # This ensures that if a validation required field is omitted, 
+        # its existing value is still valid in the new org context.
+
         messages = []
         instance = self.instance
 

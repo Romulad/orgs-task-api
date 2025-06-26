@@ -16,7 +16,9 @@ from .serializers import (
 
 class TagViewSet(FullModelViewSet):
     permission_classes = [IsAuthenticated]
-    queryset = queryset_helpers.get_tag_queryset()
+    queryset = queryset_helpers.get_tag_queryset(
+        include_nested_selected=True, prefetch_org_can_be_accessed_by=True
+    ).order_by('created_at')
     serializer_class = TagSerializer
     filterset_class = TagDataFilter
     ordering_fields = ['name', 'description', 'created_at']

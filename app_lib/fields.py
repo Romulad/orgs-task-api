@@ -3,7 +3,18 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.utils import html
 
 class AllowBlankMixin:
-
+    """A mixin to allow blank values in serializers.
+    This mixin can be used with any serializer field to allow blank values
+    while still performing validation. If `allow_blank` is set to True, the field
+    will return None for blank values instead of raising a validation error.
+    A Blank value is considered an empty string ('').
+    """
+    # for context: 
+    # it was necessary to create this mixin because a serializer field like
+    # DateTimeField does not have a `allow_blank` argument, so we cannot use
+    # the `allow_blank` argument directly in the field definition.
+    # This can be usefull in a update(PUT) operation where all fields should be 
+    # included, but some of them can be blank.
     def __init__(self, allow_blank=False, **kwargs):
         self.allow_blank = allow_blank
         super().__init__(**kwargs)
@@ -22,6 +33,12 @@ class AllowBlankMixin:
         
 
 class ManyPrimaryKeyRelatedField(serializers.RelatedField):
+    """A field for handling many-to-many relationships using primary keys.
+    This field can be used to serialize and deserialize lists of primary keys
+    for related objects. It can also accept a serializer class `serializer_class` to provide more
+    detailed serialization of the related objects.
+    """
+
     default_error_messages = {
         'invalid': _('Invalid data'),
         'required': _('This field is required.'),

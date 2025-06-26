@@ -63,7 +63,9 @@ class RemovePermissionView(GenericAPIView):
 class RoleViewSet(FullModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
-    queryset = queryset_helpers.get_role_queryset()
+    queryset = queryset_helpers.get_role_queryset(
+        include_nested_selected=True, prefetch_org_can_be_accessed_by=True
+    ).order_by("created_at")
     filterset_class = RoleDataFilter
     ordering_fields = ['name', 'description', 'created_at', 'org__name']
 

@@ -6,20 +6,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from app_lib.views import FullModelViewSet
+from app_lib.queryset import queryset_helpers
 from .serializers import (
     UserDetailSerializer,
     CreateUserSerializer,
     UpdateUserSerializer,
     UpdateUserPasswordSerializer,
 )
-from .models import AppUser as User
 from .filters import UserDataFilter
 from app_lib.permissions import Is_Object_Or_Org_Or_Depart_Creator
 
 
 class UserViewSet(FullModelViewSet):
     serializer_class = UserDetailSerializer
-    queryset = User.objects.all()
+    queryset = queryset_helpers.get_user_queryset().order_by('created_at')
     filterset_class= UserDataFilter
 
     def get_serializer_class(self):
