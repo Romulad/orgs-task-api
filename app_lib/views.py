@@ -17,6 +17,7 @@ from .global_serializers import (
     ChangeUserOwnerListSerializer
 )
 from .authorization import auth_checker
+from .decorators import schema_wrapper
 from .app_permssions import CAN_CHANGE_RESSOURCES_OWNERS
 from .permissions import Is_Object_Or_Org_Or_Depart_Creator
 from organization.models import Organization
@@ -25,6 +26,9 @@ from organization.models import Organization
 class BulkDeleteResourceMixin:
     bulk_delete_view_name = "bulk_delete"
 
+    @schema_wrapper(
+        request_serializer=BulkDeleteResourceSerializer
+    )
     @action(
         detail=False,
         methods=[HTTPMethod.DELETE],
@@ -33,7 +37,24 @@ class BulkDeleteResourceMixin:
         permission_classes=[IsAuthenticated]
     )
     def bulk_delete(self, request:Request, *args, **kwargs):
-        """Deleted specified ressource by ids. Ids are passed in the request body."""
+        """
+        # Handles bulk deletion of resources.
+
+        This endpoint allows authenticated users to request the deletion of multiple 
+        resources by providing their IDs using an `ids` field in the request data. 
+
+        If the request contains ressource IDs that the authenticated user does not have permission to delete, 
+        an error response is returned.
+        
+        Resources are not physically deleted but are marked as deleted. On successful deletion, 
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent ressource IDs, a success 200 
+        response is returned detailing which resources were deleted and which IDs were not found.
+        
+        If all provided IDs are not found, a 404 error response is returned with an 
+        appropriate error message.
+        """
         return self.perform_bulk_delete(request)
 
     def get_ressources_queryset(self, ressource_ids):
@@ -73,6 +94,10 @@ class BulkDeleteResourceMixin:
 class ChangeObjectOwnersMixin:
     owner_view_name = "change_owners"
     
+    @schema_wrapper(
+        request_serializer=ChangeUserOwnerListSerializer,
+        response_status_code=status.HTTP_204_NO_CONTENT
+    )
     @action(
         detail=True, 
         methods=[HTTPMethod.POST],
@@ -82,10 +107,10 @@ class ChangeObjectOwnersMixin:
         serializer_class=ChangeUserOwnerListSerializer
     )
     def change_owners(self, request, *args, **kwargs):
-        """Only creator can set owner users. _Owner_ is a list of user that 
-        have full acccess over the data but can't add new owner user.\n
-        **Only for user data**: User itself can set owner users, owner added by the creator or user itself 
-        can't delete user data"""
+        """
+        # Change the owners of a target object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+        """
         user = request.user
         target_obj = self.get_obj_to_change_owners_for()
         context = {"user": user}

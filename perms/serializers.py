@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 
 from app_lib.queryset import queryset_helpers
 from app_lib.fields import ManyPrimaryKeyRelatedField
@@ -8,6 +9,13 @@ from .models import Role, UserPermissions
 from user.serializers import UserSerializer
 from organization.serializers import OrganizationSerializer
 from app_lib.app_permssions import permissions_exist, get_perm_data
+
+
+class PermDataSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    label = serializers.CharField()
+    help_text = serializers.CharField()
+
 
 class SimpleUserPermissionSerializer(serializers.ModelSerializer):
     perms = serializers.SerializerMethodField()
@@ -18,6 +26,7 @@ class SimpleUserPermissionSerializer(serializers.ModelSerializer):
             "perms"
         ]
     
+    @extend_schema_field(field=PermDataSerializer(many=True))
     def get_perms(self, user_perm:UserPermissions):
         user_perms = user_perm.get_perms()
         return get_perm_data(user_perms)

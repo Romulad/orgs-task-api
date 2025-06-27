@@ -10,7 +10,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.serializers import ValidationError
-from drf_spectacular.utils import extend_schema
 
 from .serializers import (
   RegistrationSerializer,
@@ -27,37 +26,37 @@ from .lib import (
 from app_lib.global_serializers import (
    GlobalMessageResponse
 )
+from app_lib.decorators import schema_wrapper
+
 
 class RegistrationView(APIView):
-  serializer_class = RegistrationSerializer
+    serializer_class = RegistrationSerializer
 
-  @extend_schema(
-      request=RegistrationSerializer,
-      responses={status.HTTP_201_CREATED: RegistrationResponseSerializer},
-  )
-  def post(self, request:Request):
-    """
-    # Create a new user
-    Use this endpoint to create a **new** account
-    """
-    req_data = request.data
-    serializer = self.serializer_class(data=req_data)
-    serializer.is_valid(raise_exception=True)
-    user = serializer.save()
-    send_validation_email(user, request)
-    return Response(
-        RegistrationResponseSerializer(user).data,
-        status=status.HTTP_201_CREATED
+    @schema_wrapper(
+        RegistrationSerializer,
+        RegistrationResponseSerializer,
+        status.HTTP_201_CREATED
     )
+    def post(self, request:Request):
+        """
+        # Create a new user
+        Use this endpoint to create a **new** account
+        """
+        req_data = request.data
+        serializer = self.serializer_class(data=req_data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        send_validation_email(user, request)
+        return Response(
+            RegistrationResponseSerializer(user).data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class ValidateNewUserAccountView(APIView):
    
-   @extend_schema(
-      responses={
-        status.HTTP_200_OK: GlobalMessageResponse,
-        status.HTTP_400_BAD_REQUEST: GlobalMessageResponse
-      }
+   @schema_wrapper(
+        response_serializer=GlobalMessageResponse
    )
    def get(self, request: Request, uuid:str, token:str):
       """# Validate user account after creation
@@ -97,72 +96,72 @@ class ValidateNewUserAccountView(APIView):
 
 
 class PasswordResetView(APIView):
-  serializer_class = PasswordResetSerializer
+    serializer_class = PasswordResetSerializer
 
-  @extend_schema(
-      request=PasswordResetSerializer,
-      responses={
-        status.HTTP_200_OK: GlobalMessageResponse,
-      }
-  )
-  def post(self, request):
-    """# Request a password reset
-    Use this endpoint to request a password reset email
-    """
-    serializer = self.serializer_class(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    email = serializer.data['email']
-    user_model = get_user_model()
+    @schema_wrapper(
+        PasswordResetSerializer,
+        GlobalMessageResponse,
+    )
+    def post(self, request):
+        """# Request a password reset
+        Use this endpoint to request a password reset email
+        """
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.data['email']
+        user_model = get_user_model()
 
-    try:
-        user = get_object_or_404(user_model, email=email)
-    except Http404:
-        pass
-    else:
-      if user and user.is_active:
-        send_password_reset_email(user, request)
-    
-    return Response({"message": "Reset password email has been sent successfully"})
+        try:
+            user = get_object_or_404(user_model, email=email)
+        except Http404:
+            pass
+        else:
+            if user and user.is_active:
+                send_password_reset_email(user, request)
+        
+        return Response({"message": "Reset password email has been sent successfully"})
 
 
 class PasswordResetConfirmView(APIView):
-  serializer_class = PasswordResetConfirmSerializer
-
-  @extend_schema(
-      request=PasswordResetConfirmSerializer,
-      responses={
-        status.HTTP_200_OK: GlobalMessageResponse,
-      }
-  )
-  def post(self, request, uuid, token):
-    user_email = force_str(urlsafe_base64_decode(uuid))
-    user_model = get_user_model()
-    bad_response = Response(
-      {"message": "Invalid or expired link"},
-      status.HTTP_400_BAD_REQUEST
+   serializer_class = PasswordResetConfirmSerializer
+   
+   @schema_wrapper(
+      PasswordResetConfirmSerializer,
+      GlobalMessageResponse,
     )
+   def post(self, request, uuid, token):
+        """
+        Handles POST requests for resetting a user's password using a password reset token.
+        """
+        
+        user_email = force_str(urlsafe_base64_decode(uuid))
+        user_model = get_user_model()
+        bad_response = Response(
+            {"message": "Invalid or expired link"},
+            status.HTTP_400_BAD_REQUEST
+        )
 
-    try:
-      user = get_object_or_404(user_model, email=user_email)
-    except:
-      return bad_response
-    
-    if not default_token_generator.check_token(user, token):
-       return bad_response
-    
-    serializer = self.serializer_class(data=request.data)
-    serializer.is_valid(raise_exception=True)
+        try:
+            user = get_object_or_404(user_model, email=user_email)
+        except:
+            return bad_response
+        
+        if not default_token_generator.check_token(user, token):
+            return bad_response
+        
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    new_password = serializer.data['password']
-    if user.check_password(new_password):
-      raise ValidationError(
-        {"password": ["You can not use your old password"]}
-      )
+        new_password = serializer.data['password']
+        if user.check_password(new_password):
+            raise ValidationError(
+                {"password": ["You can not use your old password"]}
+            )
 
-    user.set_password(new_password)
-    user.save()
-    send_password_reset_confirm_email(user)
+        user.set_password(new_password)
+        user.save()
+        send_password_reset_confirm_email(user)
 
-    return Response(
-      {"message": "You password has been changed successfully"}
-    )
+        return Response(
+            {"message": "You password has been changed successfully"}
+        )

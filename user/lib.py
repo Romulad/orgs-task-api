@@ -33,6 +33,35 @@ def get_user_authorizations_per_org(user):
     Returns:
         list: A list of dictionaries containing organization data, permissions,
               and roles for the user.
+
+    ```
+    [
+        {
+            "org": {
+                "id": "uuid",
+                "name": "string",
+                "description": "string"
+            },
+            "perms": [
+                {
+                    "name": "string",
+                    "label": "string",
+                    "help_text": "string"
+                },
+            ],
+            "roles": [
+                {
+                    "id": "uuid",
+                    "name": "string",
+                    "description": "string",
+                    "perms": ["perm_name", ...],
+                },
+                ...
+            ]
+        },
+        ...
+    ]
+    ```
     """
     # To avoid circular imports error
     from organization.serializers import OrganizationSerializer

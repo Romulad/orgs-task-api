@@ -63,6 +63,7 @@ def permissions_exist(
     
     return False if not_found else True, found, not_found
 
+
 def get_perm_list(
         creator_only=False, 
         default_only=False
@@ -82,7 +83,31 @@ def get_perm_list(
         perms = {**APP_PERMISSIONS, **CREATOR_ONLY_PERMS}
     return list(perms.keys())
 
+
 def get_perm_data(perms:list[str]):
+    """
+    Retrieves metadata for a list of permission identifiers.
+    Args:
+        perms (list[str]): A list of permission strings to look up.
+    Returns:
+        list[dict]: A list of dictionaries, each containing the permission label and its associated metadata.
+        Permissions not found in `ALL_PERMS` are skipped. 
+    ```
+    [
+        {
+            "name": "string",
+            "label": "string",
+            "help_text": "string"
+        },
+        ...
+    ]
+    ```
+
+    **Note** :
+        - If a permission is not found in `ALL_PERMS`, it is ignored.
+   
+    """
+    
     data = []
     for perm in perms:
         perm_meta_data = ALL_PERMS.get(perm, None)

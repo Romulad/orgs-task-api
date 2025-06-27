@@ -65,9 +65,9 @@ class CreateUserSerializer(UserDetailSerializer):
         write_only=True
     )
     
-    class Meta(UserSerializer.Meta):
+    class Meta(UserDetailSerializer.Meta):
         fields = [
-            *UserSerializer.Meta.fields,
+            *UserDetailSerializer.Meta.fields,
             "password"
         ]
     
