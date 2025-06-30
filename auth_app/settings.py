@@ -149,8 +149,9 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Multi-level task management system',
-    'DESCRIPTION': 'Task management system',
+    'TITLE': 'Organization Management Platform',
+    'DESCRIPTION': """API built to help teams **create**, **organize**, and **manage** organizations, 
+    their **departments**, **users**, **tasks**, and **permissions**.""",
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SORT_OPERATIONS': False,
@@ -159,7 +160,7 @@ SPECTACULAR_SETTINGS = {
 
 }
 
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
