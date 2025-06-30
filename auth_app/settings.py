@@ -153,6 +153,15 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': """API built to help teams **create**, **organize**, and **manage** organizations, 
     their **departments**, **users**, **tasks**, and **permissions**.""",
     'VERSION': '1.0.0',
+    'EXTERNAL_DOCS': {
+        "url": "https://romulad.gitbook.io/org-api",
+        "description": "Documentation"
+    },
+    'CONTACT': {
+        "name": "Romuald Oluwatobi",
+        "url": "https://github.com/Romulad"
+    },
+    'SERVERS': [],
     'SERVE_INCLUDE_SCHEMA': False,
     'SORT_OPERATIONS': False,
     'SORT_OPERATION_PARAMETERS': False,
