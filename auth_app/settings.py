@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
 from decouple import config
@@ -146,6 +146,13 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter"
     ),
     'DEFAULT_PAGINATION_CLASS': 'app_lib.pagination.DefaultCursorPagination',
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60) if DEBUG else timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=21),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 SPECTACULAR_SETTINGS = {

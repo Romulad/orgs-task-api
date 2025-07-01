@@ -133,7 +133,6 @@ class PasswordResetConfirmView(APIView):
         """
         Handles POST requests for resetting a user's password using a password reset token.
         """
-        
         user_email = force_str(urlsafe_base64_decode(uuid))
         user_model = get_user_model()
         bad_response = Response(
