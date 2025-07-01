@@ -5,38 +5,9 @@ from django.utils.translation import gettext_lazy as _
 from .models import AppUser
 from app_lib.password import generate_password, validate_password
 from .lib import send_account_created_notification
-from .lib import get_user_authorizations_per_org
-
-class UserSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField()
-    created_at = serializers.ReadOnlyField()
-    first_name = serializers.ReadOnlyField()
-    last_name  = serializers.ReadOnlyField()
-    email = serializers.ReadOnlyField()
-    class Meta:
-        model = AppUser
-        fields = [
-            "id",
-            "email",
-            "first_name",
-            "last_name",
-            "created_at"
-        ]
-
-
-class UserDetailSerializer(UserSerializer):
-    can_be_accessed_by = UserSerializer(many=True, read_only=True)
-    authorizations = serializers.SerializerMethodField()
-
-    class Meta(UserSerializer.Meta):
-        fields = [
-            *UserSerializer.Meta.fields,
-            "can_be_accessed_by",
-            "authorizations"
-        ]
-    
-    def get_authorizations(self, user):
-        return get_user_authorizations_per_org(user)
+from app_lib.read_only_serializers import (
+    UserDetailSerializer
+)
 
 
 class CreateUserSerializer(UserDetailSerializer):

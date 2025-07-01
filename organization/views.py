@@ -4,20 +4,22 @@ from django.utils.translation import gettext_lazy as _
 from django.shortcuts import get_object_or_404
 
 from .serializers import (
-    OrganizationSerializer,
-    OrganizationDetailSerializer,
     CreateOrganizationSerializer,
     UpdateOrganizationSerializer,
     CreateDepartmentSerializer,
-    DepartmentSerializer,
-    DepartmentDeailSerializer,
     UpdateDepartmentSerializer
 )
 from .filters import (
     OrganizationDataFilter,
-    DepartmentDataFilter
+    DepartmentDataFilter,
 )
 from .models import Organization
+from app_lib.read_only_serializers import (
+    OrganizationSerializer,
+    OrganizationDetailSerializer,
+    DepartmentSerializer,
+    DepartmentDeailSerializer
+)
 from app_lib.permissions import (
     Can_Access_ObjectInstance,
     Is_Object_Or_Org_Or_Depart_Creator,

@@ -64,8 +64,11 @@ def get_user_authorizations_per_org(user):
     ```
     """
     # To avoid circular imports error
-    from organization.serializers import OrganizationSerializer
-    from perms.serializers import SimpleUserPermissionSerializer, SimpleRoleSerializer
+    from app_lib.read_only_serializers import (
+        OrganizationSerializer,
+        SimpleUserPermissionSerializer,
+        SimpleRoleSerializer
+    )
     
     # db queries
     user_orgs = list(

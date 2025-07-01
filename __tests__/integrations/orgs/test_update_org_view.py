@@ -218,7 +218,7 @@ class TestUpdateOrgView(BaseTestClass):
                     "members": self.get_ids_from(created_org.members.all())
                 },
                "field": "members",
-               "contain": "user you didn't create or have access to as member"
+               "contain": "user you did not create or do not have access to as a member"
             },
             {
                "user": self.owner, 

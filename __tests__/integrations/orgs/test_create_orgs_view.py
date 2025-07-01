@@ -79,13 +79,13 @@ class TestCreateOrgView(BaseTestClass):
                 "user": user, 
                 'req_data': {"name": "test", "members": [not_access_user.id]}, 
                 'field': "members",
-                'contain': "create or have access to as member"
+                'contain': "create or do not have access to as a member"
             },
             {
                 "user": user, 
                 'req_data': {"name": "test", "owner": access_free_owner.id, "members": [own_owner.id]}, 
                 'field': "members",
-                'contain': "create or have access to as member"
+                'contain': "create or do not have access to as a member"
             },
             {
                 "user": user, 

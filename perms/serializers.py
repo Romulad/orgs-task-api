@@ -1,35 +1,12 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.utils import extend_schema_field
 
 from app_lib.queryset import queryset_helpers
 from app_lib.fields import ManyPrimaryKeyRelatedField
 from app_lib.authorization import auth_checker
-from .models import Role, UserPermissions
-from user.serializers import UserSerializer
-from organization.serializers import OrganizationSerializer
-from app_lib.app_permssions import permissions_exist, get_perm_data
-
-
-class PermDataSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    label = serializers.CharField()
-    help_text = serializers.CharField()
-
-
-class SimpleUserPermissionSerializer(serializers.ModelSerializer):
-    perms = serializers.SerializerMethodField()
-
-    class Meta:
-        model = UserPermissions
-        fields = [
-            "perms"
-        ]
-    
-    @extend_schema_field(field=PermDataSerializer(many=True))
-    def get_perms(self, user_perm:UserPermissions):
-        user_perms = user_perm.get_perms()
-        return get_perm_data(user_perms)
+from .models import Role
+from app_lib.app_permssions import permissions_exist
+from app_lib.read_only_serializers import RoleDetailSerializer
 
 
 class AddPermissionsSerializer(serializers.Serializer):
@@ -92,49 +69,6 @@ class RemovePermissionsSerializer(AddPermissionsSerializer):
         perms = validated_data["perms"]
         perms_tuple = auth_checker.remove_permissions_from_users(users, org, perms)
         return perms_tuple
-
-
-class SimpleRoleSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-    description = serializers.ReadOnlyField()
-    created_at = serializers.ReadOnlyField()
-    perms = serializers.ReadOnlyField()
-    class Meta:
-        model = Role
-        fields = [
-            "id",
-            "name",
-            "description",
-            "perms",
-            "created_at"
-        ]
-    
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation["perms"] = instance.get_perms()
-        return representation
-    
-
-class RoleSerializer(SimpleRoleSerializer):
-    org = OrganizationSerializer(read_only=True)
-    class Meta:
-        model = Role
-        fields = [
-            *SimpleRoleSerializer.Meta.fields,
-            "org",
-        ]
-
-
-class RoleDetailSerializer(RoleSerializer):
-    users = UserSerializer(many=True, read_only=True)
-    can_be_accessed_by = UserSerializer(many=True, read_only=True)
-    class Meta(RoleSerializer.Meta):
-        fields = [
-            *RoleSerializer.Meta.fields,
-            "users",
-            "can_be_accessed_by"
-        ]
 
 
 class CreateRoleSerializer(RoleDetailSerializer):
@@ -252,7 +186,7 @@ class UpdateRoleSerializer(CreateRoleSerializer):
         # validate user permission over org
         super().validate_org(org)
 
-        # ensure the new org does not have a role with the same already
+        # ensure the new org does not have a role with the same name already
         if self.initial_data.get("name", None) is None:
             self.assert_name_uniqueness(self.instance.name, org.id)
 

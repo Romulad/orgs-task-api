@@ -29,6 +29,18 @@ class AuthorizationChecker:
         return is_allowed
     
     def has_access_to_objs(self, objs:list, want_access_obj) -> bool:
+        """
+        Checks if access is granted to all objects in the provided list.
+        Iterates over each object in the `objs` list and checks if access is allowed
+        using the `has_access_to_obj` method. If access is denied for any object,
+        the function returns False immediately. If access is granted for all objects,
+        returns True.
+        Args:
+            objs (list): A list of objects to check access for.
+            want_access_obj: The object or permission criteria to check access against.
+        Returns:
+            bool: True if access is granted to all objects, False otherwise.
+        """
         for obj in objs:
             is_allowed = self.has_access_to_obj(obj, want_access_obj)
             if not is_allowed:

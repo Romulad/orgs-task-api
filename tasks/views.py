@@ -8,11 +8,13 @@ from rest_framework.response import Response
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 from tasks.serializers import (
-    TaskSerializer, 
-    TaskDetailSerializer, 
     CreateTaskSerializer,
     UpdateTaskSeriliazer,
     UpdateTaskStatusSerializer
+)
+from app_lib.read_only_serializers import (
+    TaskSerializer,
+    TaskDetailSerializer
 )
 from app_lib.permissions import Can_Access_Org_Depart_Or_Obj
 from .filters import TaskDataFilter

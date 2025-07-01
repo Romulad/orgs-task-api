@@ -2,62 +2,18 @@ from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
 from .models import Task
-from user.serializers import UserSerializer
-from organization.serializers import OrganizationSerializer, DepartmentSerializer
 from organization.models import Organization
 from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
-from tags.serializers import TagSerializer
 from app_lib.fields import (
     ManyPrimaryKeyRelatedField, 
     DefaultDateTimeField
 )
 from app_lib.app_permssions import CAN_CREATE_TASK
-
-
-class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = [
-            "id",
-            "name",
-            "description",
-            "due_date",
-            "priority",
-            "status",
-            'estimated_duration',
-            "actual_duration",
-            "created_at",
-        ]
-        extra_kwargs = {
-            'id': {'read_only': True},
-            'name': {'read_only': True},
-            'description': {'read_only': True},
-            'due_date': {'read_only': True},
-            'priority': {'read_only': True},
-            'status': {'read_only': True},
-            'estimated_duration': {'read_only': True},
-            'actual_duration': {'read_only': True},
-            'created_at': {'read_only': True},
-        }
-
-
-class TaskDetailSerializer(TaskSerializer):
-    assigned_to = UserSerializer(many=True, read_only=True)
-    tags = TagSerializer(many=True, read_only=True)
-    depart = DepartmentSerializer(read_only=True)
-    org = OrganizationSerializer(read_only=True)
-    can_be_accessed_by = UserSerializer(many=True, read_only=True)
-
-    class Meta(TaskSerializer.Meta):
-        fields = [
-            *TaskSerializer.Meta.fields,
-            "assigned_to",
-            "tags",
-            "depart",
-            "org",
-            "can_be_accessed_by",
-        ]
+from app_lib.read_only_serializers import (
+    TaskDetailSerializer,
+    TaskSerializer
+)
 
 
 class CreateUpdateTaskBaseSerializer(TaskDetailSerializer):

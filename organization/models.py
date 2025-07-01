@@ -49,6 +49,7 @@ class Organization(AbstractBaseModel):
     new_users = get_diff_objs(users, self.members.all())
     if new_users:
       self.members.add(*new_users)
+    return new_users
   
 
 class Department(AbstractBaseModel):

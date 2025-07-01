@@ -186,7 +186,7 @@ class TestPartialUpdateOrgView(BaseTestClass):
                    "owner": new_owner.id,
                 },
                "field": "members",
-               "contain": "user you didn't create or have access to as member"
+               "contain": "user you did not create or do not have access to as a member"
             },
             {
                "user": self.owner, 
@@ -195,7 +195,7 @@ class TestPartialUpdateOrgView(BaseTestClass):
                    "members": [self.simple_user.id, user1.id],
                 },
                "field": "members",
-               "contain": "user you didn't create or have access to as member",
+               "contain": "user you did not create or do not have access to as a member",
                "before_req": lambda: self.simple_user.can_be_accessed_by.add(new_owner)
             },
             {

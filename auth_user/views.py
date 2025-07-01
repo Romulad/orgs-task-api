@@ -131,7 +131,7 @@ class PasswordResetConfirmView(APIView):
     )
    def post(self, request, uuid, token):
         """
-        Handles POST requests for resetting a user's password using a password reset token.
+        # Reset user password using token
         """
         user_email = force_str(urlsafe_base64_decode(uuid))
         user_model = get_user_model()

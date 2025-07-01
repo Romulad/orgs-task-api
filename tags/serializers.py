@@ -2,39 +2,11 @@ from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
 from .models import Tag
-from organization.serializers import OrganizationSerializer
-from user.serializers import UserSerializer
 from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
 from app_lib.app_permssions import CAN_CREATE_TAG
 from app_lib.common_error_messages import ORG_ACCESS_ISSUE_MESSAGE
-
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ['id', 'name', 'description', 'created_at']
-        extra_kwargs = {
-            'id': {'read_only': True},
-            'name': {'read_only': True},
-            'description': {'read_only': True},
-            'created_at': {'read_only': True},
-        }
-
-
-class TagDetailSerializer(TagSerializer):
-    org = OrganizationSerializer(read_only=True)
-    can_be_accessed_by = UserSerializer(read_only=True, many=True)
-
-    class Meta(TagSerializer.Meta):
-        fields = [
-            *TagSerializer.Meta.fields,
-            'org',
-            'can_be_accessed_by'
-        ]
-        extra_kwargs = {
-            **TagSerializer.Meta.extra_kwargs,
-        }
-
+from app_lib.read_only_serializers import TagDetailSerializer
 
 class CreateTagSerializer(TagDetailSerializer):
     name = serializers.CharField(

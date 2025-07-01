@@ -8,10 +8,12 @@ from app_lib.permissions import (
 )
 from .filters import TagDataFilter
 from .serializers import (
-    TagSerializer,
-    TagDetailSerializer,
     CreateTagSerializer,
     UpdateTagSerializer
+)
+from app_lib.read_only_serializers import (
+    TagSerializer,
+    TagDetailSerializer
 )
 
 class TagViewSet(FullModelViewSet):

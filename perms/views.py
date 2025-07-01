@@ -9,8 +9,6 @@ from django.db.models import Q
 from .serializers import (
     AddPermissionsSerializer,
     RemovePermissionsSerializer,
-    RoleSerializer,
-    RoleDetailSerializer,
     CreateRoleSerializer,
     UpdateRoleSerializer
 )
@@ -21,6 +19,10 @@ from app_lib.queryset import queryset_helpers
 from app_lib.permissions import (
     Can_Access_Org_Or_Obj, 
     Can_Access_Org_Depart_Or_Obj
+)
+from app_lib.read_only_serializers import (
+    RoleSerializer,
+    RoleDetailSerializer
 )
 
 

@@ -2,39 +2,16 @@ from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AnonymousUser
 
-from .models import Organization, Department
+from .models import Organization
 from user.models import AppUser as User
-from user.serializers import UserSerializer
 from app_lib.email import send_invitation_success_email
 from app_lib.authorization import auth_checker
+from app_lib.queryset import queryset_helpers
 from app_lib.fn import get_diff_objs
-
-class OrganizationSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField()
-    created_at = serializers.ReadOnlyField()
-    owner = UserSerializer(read_only=True)
-    name = serializers.ReadOnlyField()
-    description = serializers.ReadOnlyField()
-    class Meta:
-        model = Organization
-        fields = [
-            "id",
-            "name",
-            "description",
-            "owner",
-            "created_at"
-        ]
-
-
-class OrganizationDetailSerializer(OrganizationSerializer):
-    members = UserSerializer(many=True, read_only=True)
-    can_be_accessed_by = UserSerializer(many=True, read_only=True)
-    class Meta(OrganizationSerializer.Meta):
-        fields = [
-            *OrganizationSerializer.Meta.fields,
-            "members",
-            "can_be_accessed_by"
-        ]
+from app_lib.read_only_serializers import (
+    OrganizationDetailSerializer,
+    DepartmentDeailSerializer,
+)
 
 
 class CreateOrganizationSerializer(OrganizationDetailSerializer):
@@ -50,20 +27,12 @@ class CreateOrganizationSerializer(OrganizationDetailSerializer):
     )
     members = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=User.objects.select_related(
-                "created_by"
-            ).prefetch_related(
-                "can_be_accessed_by"
-            ),
+        queryset=queryset_helpers.get_user_queryset(),
         pk_field=serializers.UUIDField(),
         required=False,
     )
     owner = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.select_related(
-                "created_by"
-            ).prefetch_related(
-                "can_be_accessed_by"
-            ),
+        queryset=queryset_helpers.get_user_queryset(),
         pk_field=serializers.UUIDField(),
         required=False,
     )
@@ -75,15 +44,33 @@ class CreateOrganizationSerializer(OrganizationDetailSerializer):
             self.fields['owner'].default = owner_user
 
     def validate_name(self, value:str):
+        """
+        Validate that the organization name is unique for the current user.
+        Args:
+            value (str): The organization name to validate.
+        Raises:
+            serializers.ValidationError: If the user already has an organization with the given name.
+        Returns:
+            str: The validated organization name.
+        """
         user = self.context["user"]
-        existed = self.Meta.model.objects.filter(name=value, owner=user).exists()
-        if existed:
+        exists = self.Meta.model.objects.filter(name=value, owner=user).exists()
+        if exists:
             raise serializers.ValidationError(
                 _("User already has an organization with that name")
             )
         return value
 
     def validate_owner(self, value:User):
+        """
+        Validates that the specified owner user can be assigned by the current user.
+        Args:
+            value (User): The user instance to be set as the owner.
+        Raises:
+            serializers.ValidationError: If the current user does not have access to assign the specified owner.
+        Returns:
+            User: The validated user instance to be set as the owner.
+        """
         user = self.context["user"]
         is_allowed = auth_checker.has_access_to_obj(value, user)
         if not is_allowed:
@@ -97,6 +84,8 @@ class CreateOrganizationSerializer(OrganizationDetailSerializer):
         owner = attrs.get("owner", None)
         members = attrs.get("members", None)
 
+        # Ensure all specified members are accessible by the owner 
+        # (or the user if owner is not specified).
         if members:
             if owner:
                 self.check_member_validity(members, owner)
@@ -106,11 +95,23 @@ class CreateOrganizationSerializer(OrganizationDetailSerializer):
         return attrs
     
     def check_member_validity(self, members:list[User], owner:User):
+        """
+        Validates that the specified members can be added by the given owner.
+        Checks if the `owner` has access rights to all users in the `members` list.
+        If access is denied for any member, raises a `serializers.ValidationError`.
+        Args:
+            members (list[User]): List of user instances to be validated as members.
+            owner (User): The user instance representing the owner performing the action.
+        Returns:
+            list[User]: The validated list of member users.
+        Raises:
+            serializers.ValidationError: If the owner does not have access to one or more members.
+        """
         is_allowed = auth_checker.has_access_to_objs(members, owner)
         if not is_allowed:
             raise serializers.ValidationError(
                 {"members": [
-                    _("You or the owner you specified can't add a user you didn't create or have access to as member")
+                    _("You or the specified owner cannot add a user you did not create or do not have access to as a member")
                     ]
                 }
             )
@@ -119,14 +120,22 @@ class CreateOrganizationSerializer(OrganizationDetailSerializer):
     def create(self, validated_data:dict):
         user = self.context["user"]
         members = validated_data.get("members", None)
+
+        # owner can be the user making the request or `owner` field
+        # `owner` field takes precedence over the user making the request
         if validated_data.get("owner", None) is None:
             validated_data["owner"] = user
+
+        # To know who create the user
         validated_data["created_by"] = user
+
         created_instance = super().create(validated_data)
+
         if members is not None:
             send_invitation_success_email(
                 members, created_instance.name
             )
+
         return created_instance
 
 
@@ -136,25 +145,18 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
     )
     members = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=User.objects.select_related(
-                "created_by"
-            ).prefetch_related(
-                "can_be_accessed_by"
-            ),
+        queryset=queryset_helpers.get_user_queryset(),
         pk_field=serializers.UUIDField(),
         required=True,
     )
     owner = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.select_related(
-                "created_by"
-            ).prefetch_related(
-                "can_be_accessed_by"
-            ),
+        queryset=queryset_helpers.get_user_queryset(),
         pk_field=serializers.UUIDField(),
         required=True,
     )
 
     def validate_name(self, value):
+        # avoid check when the name has not being modified
         org_name = self.instance.name
         if org_name == value:
             return value
@@ -169,6 +171,7 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
         
         # trying to change the owner, check user has access to the new owner
         super().validate_owner(value)
+
         return value
 
     def validate(self, attrs:dict):
@@ -177,6 +180,8 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
         all_members = self.instance.members.all()
         current_owner = self.instance.owner
 
+        # ensure new owner specified or the current owner has access to all members
+        # specified in the request data or current members (all_members)
         if owner and members:
             self.check_member_validity(members, owner)
         elif owner and not members:
@@ -187,45 +192,16 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
         return attrs
 
     def update(self, instance, validated_data):
+        # members not part of the org yet
         new_members = []
         if (all_members := validated_data.get("members", None)):
-            existed_member_ids = [existed_mem.id for existed_mem in instance.members.all()]
-            new_members = [
-                new_member for new_member in all_members if not new_member.id in existed_member_ids
-            ]
+            new_members = get_diff_objs(all_members, instance.members.all())
+
         updated_obj = super().update(instance, validated_data)
+
         send_invitation_success_email(new_members, instance.name)
+
         return updated_obj
-
-
-class DepartmentSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField()
-    name = serializers.ReadOnlyField()
-    description = serializers.ReadOnlyField()
-    org = OrganizationSerializer(read_only=True)
-    created_at = serializers.ReadOnlyField()
-
-    class Meta:
-        model = Department
-        fields = [
-            'id',
-            'name',
-            'description',
-            'org',
-            'created_at',
-        ]
-
-
-class DepartmentDeailSerializer(DepartmentSerializer):
-    members = UserSerializer(many=True, read_only=True)
-    can_be_accessed_by = UserSerializer(many=True, read_only=True)
-
-    class Meta(DepartmentSerializer.Meta):
-        fields = [
-            *DepartmentSerializer.Meta.fields,
-            "members",
-            "can_be_accessed_by"
-        ]
 
 
 class CreateDepartmentSerializer(DepartmentDeailSerializer):
@@ -241,19 +217,15 @@ class CreateDepartmentSerializer(DepartmentDeailSerializer):
     )
     members = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=User.objects.select_related(
-                "created_by"
-            ).prefetch_related(
-                "can_be_accessed_by"
-            ),
+        queryset=queryset_helpers.get_user_queryset(),
         pk_field=serializers.UUIDField(),
         required=False,
     )
     
     def validate_name(self, value:str):
         org = self.context["org"]
-        existed = self.Meta.model.objects.filter(name=value, org=org).exists()
-        if existed:
+        exists = self.Meta.model.objects.filter(name=value, org=org).exists()
+        if exists:
             raise serializers.ValidationError(
                 _("Organization already has a department with that name")
             )
@@ -276,9 +248,7 @@ class CreateDepartmentSerializer(DepartmentDeailSerializer):
         new_members = []
         if (depart_members := validated_data.get("members", None)):
             org_members = org.members.all()
-            new_members = [
-                new_member for new_member in depart_members if new_member not in org_members
-            ]
+            new_members = get_diff_objs(depart_members, org_members)
         
         validated_data["created_by"] = user
         validated_data["org"] = org
@@ -303,37 +273,29 @@ class UpdateDepartmentSerializer(CreateDepartmentSerializer):
         required=True,
     )
     org = serializers.PrimaryKeyRelatedField(
-        queryset=Organization.objects.select_related(
-                "created_by", "owner"
-            ).prefetch_related(
-                "can_be_accessed_by", "members"
-            ),
+        queryset=queryset_helpers.get_org_queryset(),
         pk_field=serializers.UUIDField(),
         required=True,
     )
     members = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=User.objects.select_related(
-                "created_by"
-            ).prefetch_related(
-                "can_be_accessed_by"
-            ),
+        queryset=queryset_helpers.get_user_queryset(),
         pk_field=serializers.UUIDField(),
         required=True,
     )
 
     def validate_name(self, value):
-        existed_name = self.instance.name
-        if existed_name == value:
+        # avoid validation when name has not being modified
+        if self.instance.name == value:
             return value
+        
         existed_org = self.instance.org
         self.context["org"] = existed_org
         return super().validate_name(value)
 
     def validate_org(self, org:Organization):
-        existed_org = self.instance.org
-
-        if existed_org.id == org.id:
+        # avoid validation when org has not being modified
+        if self.instance.org.id == org.id:
             return org
         
         # want to change org for the depart, check if he has access to the new org
@@ -358,7 +320,9 @@ class UpdateDepartmentSerializer(CreateDepartmentSerializer):
         org = attrs.get('org', None)
         members = attrs.get('members', None)
 
-        if org and members and org.id == instance.org.id:
+        # ensure the org owner has access to the members 
+        # either current instance org or specified org in the request data
+        if org and org.id == instance.org.id:
             return attrs
         elif org and not members:
             if not auth_checker.has_access_to_objs(
@@ -379,20 +343,30 @@ class UpdateDepartmentSerializer(CreateDepartmentSerializer):
         return attrs
 
     def update(self, instance, validated_data):
+        """
+        Updates an organization instance with validated data, 
+        handling member additions and sending invitation emails.
+        Args:
+            instance: The current organization instance to update.
+            validated_data (dict): The validated data containing fields to update, possibly including 'members' and 'org'.
+        Returns:
+            The updated organization instance.
+        **Notes**:
+            - If 'org' is provided in validated_data, 
+            members(either on the instance or specified in request data) are added to that organization.
+        """
         new_member =[]
         members = validated_data.get("members", None)
         org = validated_data.get("org", None)
+
         if org:
             if members:
-                new_member = get_diff_objs(members, org.members.all())
-                org.members.add(*new_member) if new_member else ""
+                new_member = org.add_no_exiting_members(members)
             else:
-                new_member = get_diff_objs(instance.members.all(), org.members.all())
-                org.members.add(*new_member) if new_member else ""
+                new_member = org.add_no_exiting_members(instance.members.all())
         else:
             if members:
-                new_member = get_diff_objs(members, instance.org.members.all())
-                instance.org.members.add(*new_member) if new_member else ""
+                new_member = instance.org.add_no_exiting_members(members)
 
         updated_data = super().update(instance, validated_data)
 

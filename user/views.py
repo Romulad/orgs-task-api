@@ -8,9 +8,11 @@ from rest_framework import status
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 from app_lib.decorators import schema_wrapper
-from .serializers import (
+from app_lib.read_only_serializers import (
     UserSerializer,
     UserDetailSerializer,
+)
+from .serializers import (
     CreateUserSerializer,
     UpdateUserSerializer,
     UpdateUserPasswordSerializer,
