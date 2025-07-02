@@ -153,7 +153,7 @@ class DefaultModelViewSet(ModelViewSet):
     filterset_class=None
     ordering_fields=None
     queryset=None
-    # actions name
+    # action names
     create_view_name = "create"
     update_view_name = "update"
     partial_update_view_name = "partial_update"
@@ -222,6 +222,42 @@ class DefaultModelViewSet(ModelViewSet):
                     code=getattr(permission, 'code', None)
                 )
     
+    def create(self, request, *args, **kwargs):
+        """
+        # Create new data.
+        """
+        return super().create(request, *args, **kwargs)
+    
+    def list(self, request, *args, **kwargs):
+        """
+        # Retrieve a list of paginated ressources.
+        """
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        # Get a ressource using its id.    
+        """
+        return super().retrieve(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """
+        # Update an existing resource with the provided request data.
+        """
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        # Partially updates a resource with the provided data.
+        """
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        # Delete a resource.
+        """
+        return super().destroy(request, *args, **kwargs)
+    
     def get_forbiden_response(self):
         return Response(
             {"detail": "You don't have enought permission to perform this action"},
@@ -249,4 +285,3 @@ class FullModelViewSet(
     ChangeObjectOwnersMixin,
 ):
     """Add common behavior needed by a typical model in the system"""
-    pass
