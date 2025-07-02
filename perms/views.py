@@ -29,6 +29,9 @@ from app_lib.read_only_serializers import (
 @api_view([HTTPMethod.GET])
 @permission_classes([IsAuthenticated])
 def get_permissions_data(request):
+    """
+    # Retrieve all available permissions.
+    """
     return Response(ALL_PERMS)
 
 
@@ -38,6 +41,9 @@ class AddPermissionView(GenericAPIView):
     permission_classes=[IsAuthenticated]
 
     def post(self, request):
+        """
+        # Add a set of permissions to users
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         added, not_found = serializer.save()

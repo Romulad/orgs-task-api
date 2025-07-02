@@ -61,7 +61,7 @@ class UserViewSet(FullModelViewSet):
     def create(self, request, *args, **kwargs):
         """# Creates an user.
         This endpoint allows an authenticated user to create a new user account.
-        On success, the user is created and an invitation email is sent to the newly created user.
+        On success, the user is created and a notification email is sent to the newly created user.
         """
         return super().create(request, *args, **kwargs)
     

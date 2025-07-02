@@ -108,7 +108,7 @@ class ChangeObjectOwnersMixin:
     )
     def change_owners(self, request, *args, **kwargs):
         """
-        # Change the owners of a target object.
+        # Change the owners of the object.
         This endpoint allows an authenticated user to update the list of owners for a specific object.
         """
         user = request.user
@@ -143,6 +143,7 @@ class ChangeObjectOwnersMixin:
         ):
             return obj
 
+        # use the default behavior, may also raise an error
         return self.get_object()   
 
 class DefaultModelViewSet(ModelViewSet):
