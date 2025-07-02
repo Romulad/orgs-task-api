@@ -1,5 +1,5 @@
 from ...base_classe import BaseTestClass
-from app_lib.app_permssions import ALL_PERMS
+from app_lib.app_permssions import get_perm_data, get_perm_list
 
 
 class TestGetPermsDataView(BaseTestClass):
@@ -19,4 +19,9 @@ class TestGetPermsDataView(BaseTestClass):
         response = self.auth_get(user)
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content)
-        self.assertDictEqual(data, ALL_PERMS)
+        self.assertIsInstance(data, list)
+        all_perms = get_perm_data(get_perm_list())
+        self.assertListEqual(data, all_perms)
+        self.assertIsNotNone(all_perms[0]['name'])
+        self.assertIsNotNone(all_perms[0]['label'])
+        self.assertIsNotNone(all_perms[0]['help_text'])
