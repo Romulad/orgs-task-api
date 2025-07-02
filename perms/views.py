@@ -23,7 +23,9 @@ from app_lib.permissions import (
 from app_lib.read_only_serializers import (
     RoleSerializer,
     RoleDetailSerializer,
-    PermDataSerializer
+    PermDataSerializer,
+    AddPermissionResponseSerializer,
+    RemovePermissionResponseSerializer
 )
 from app_lib.decorators import schema_wrapper
 
@@ -43,6 +45,10 @@ class AddPermissionView(GenericAPIView):
     serializer_class=AddPermissionsSerializer
     permission_classes=[IsAuthenticated]
 
+    @schema_wrapper(
+        AddPermissionsSerializer,
+        AddPermissionResponseSerializer
+    )
     def post(self, request):
         """
         # Add a set of permissions to users
@@ -61,7 +67,14 @@ class RemovePermissionView(GenericAPIView):
     serializer_class=RemovePermissionsSerializer
     permission_classes=[IsAuthenticated]
 
+    @schema_wrapper(
+        AddPermissionsSerializer,
+        RemovePermissionResponseSerializer
+    )
     def post(self, request):
+        """
+        # Remove a set of permissions from users
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         removed, not_found = serializer.save()

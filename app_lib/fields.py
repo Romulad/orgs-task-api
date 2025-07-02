@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from rest_framework.utils import html
+from drf_spectacular.utils import extend_schema_field
 
 class AllowBlankMixin:
     """A mixin to allow blank values in serializers.
@@ -32,6 +33,7 @@ class AllowBlankMixin:
             return data
         
 
+@extend_schema_field(field=serializers.ListField(child=serializers.UUIDField()))
 class ManyPrimaryKeyRelatedField(serializers.RelatedField):
     """A field for handling many-to-many relationships using primary keys.
     This field can be used to serialize and deserialize lists of primary keys

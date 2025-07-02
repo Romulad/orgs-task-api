@@ -113,6 +113,16 @@ class SimpleUserPermissionSerializer(serializers.ModelSerializer):
         return get_perm_data(user_perms)
 
 
+class AddPermissionResponseSerializer(serializers.Serializer):
+    added = serializers.ListSerializer(child=serializers.CharField())
+    not_found = serializers.ListSerializer(child=serializers.CharField())
+
+
+class RemovePermissionResponseSerializer(serializers.Serializer):
+    removed = serializers.ListSerializer(child=serializers.CharField())
+    not_found = serializers.ListSerializer(child=serializers.CharField())
+
+
 class SimpleRoleSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
