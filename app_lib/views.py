@@ -224,7 +224,7 @@ class DefaultModelViewSet(ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """
-        # Create new data.
+        # Create a new data.
         """
         return super().create(request, *args, **kwargs)
     

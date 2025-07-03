@@ -1,4 +1,5 @@
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 from django.db.models.query import Q
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import get_object_or_404
@@ -18,7 +19,8 @@ from app_lib.read_only_serializers import (
     OrganizationSerializer,
     OrganizationDetailSerializer,
     DepartmentSerializer,
-    DepartmentDeailSerializer
+    DepartmentDeailSerializer,
+    CreateUpdateOrgResponseSerializer
 )
 from app_lib.permissions import (
     Can_Access_ObjectInstance,
@@ -32,6 +34,8 @@ from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
 from app_lib.authorization import auth_checker
 from app_lib.app_permssions import CAN_CREATE_DEPART
+from app_lib.decorators import schema_wrapper
+
 
 class OrganizationViewset(FullModelViewSet):
     permission_classes=[IsAuthenticated]
@@ -85,6 +89,37 @@ class OrganizationViewset(FullModelViewSet):
             ]
         
         return super().get_permissions()
+    
+    @schema_wrapper(
+        CreateOrganizationSerializer,
+        CreateUpdateOrgResponseSerializer,
+        status.HTTP_201_CREATED
+    )
+    def create(self, request, *args, **kwargs):
+        """
+        # Create a new Organization.
+        """
+        return super().create(request, *args, **kwargs)
+
+    @schema_wrapper(
+        UpdateOrganizationSerializer,
+        CreateUpdateOrgResponseSerializer,
+    )
+    def update(self, request, *args, **kwargs):
+        """
+        # Update an existing organization with the provided request data.
+        """
+        return super().update(request, *args, **kwargs)
+
+    @schema_wrapper(
+        UpdateOrganizationSerializer,
+        CreateUpdateOrgResponseSerializer,
+    )
+    def partial_update(self, request, *args, **kwargs):
+        """
+        # Partially updates a organization with the provided data.
+        """
+        return super().partial_update(request, *args, **kwargs)
 
 
 class DepartmentViewset(FullModelViewSet):

@@ -60,6 +60,10 @@ class OrganizationDetailSerializer(OrganizationSerializer):
         ]
 
 
+class CreateUpdateOrgResponseSerializer(OrganizationDetailSerializer):
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+
+
 #======= Depart =======
 class DepartmentSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()

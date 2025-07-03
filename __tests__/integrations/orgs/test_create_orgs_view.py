@@ -17,6 +17,7 @@ class TestCreateOrgView(BaseTestClass):
     - test send create org req with full data and check db state
     - org is created and has the proper owner, name, descr if specied and created_by attr set
     - view return proper response after creation
+    - test members get notification after being added to an org
     """
     url_name = "orgs-list"
 
@@ -122,6 +123,10 @@ class TestCreateOrgView(BaseTestClass):
 
         response = self.auth_post(user, data)
         self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+        data = self.loads(response.content)
+        self.assertIsInstance(data.get("members"), list)
+        self.assertEqual(data.get("members")[0]["id"], str(access_free_owner.id))
+        # ressource get created and mail sent
         Organization.objects.get(
             name='test', owner=own_owner, created_by=user, members__in=[access_free_owner.id]
         )

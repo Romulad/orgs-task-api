@@ -8,9 +8,11 @@ from app_lib.email import send_invitation_success_email
 from app_lib.authorization import auth_checker
 from app_lib.queryset import queryset_helpers
 from app_lib.fn import get_diff_objs
+from app_lib.fields import ManyPrimaryKeyRelatedField
 from app_lib.read_only_serializers import (
     OrganizationDetailSerializer,
     DepartmentDeailSerializer,
+    UserSerializer
 )
 
 
@@ -25,11 +27,11 @@ class CreateOrganizationSerializer(OrganizationDetailSerializer):
     description = serializers.CharField(
         required=False, allow_blank=True
     )
-    members = serializers.PrimaryKeyRelatedField(
-        many=True,
+    members = ManyPrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
-        pk_field=serializers.UUIDField(),
+        allow_empty=True,
         required=False,
+        serializer_class=UserSerializer
     )
     owner = serializers.PrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
@@ -143,10 +145,8 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
     description = serializers.CharField(
         required=True, allow_blank=True
     )
-    members = serializers.PrimaryKeyRelatedField(
-        many=True,
+    members = ManyPrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
-        pk_field=serializers.UUIDField(),
         required=True,
     )
     owner = serializers.PrimaryKeyRelatedField(
