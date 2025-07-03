@@ -148,6 +148,8 @@ class UpdateOrganizationSerializer(CreateOrganizationSerializer):
     members = ManyPrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
         required=True,
+        serializer_class=UserSerializer,
+        allow_empty=True
     )
     owner = serializers.PrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
@@ -215,11 +217,11 @@ class CreateDepartmentSerializer(DepartmentDeailSerializer):
     description = serializers.CharField(
         required=False, allow_blank=True
     )
-    members = serializers.PrimaryKeyRelatedField(
-        many=True,
+    members = ManyPrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
-        pk_field=serializers.UUIDField(),
         required=False,
+        allow_empty=True,
+        serializer_class=UserSerializer
     )
     
     def validate_name(self, value:str):
@@ -244,19 +246,14 @@ class CreateDepartmentSerializer(DepartmentDeailSerializer):
     def create(self, validated_data:dict):
         org = self.context["org"]
         user = self.context['user']
-
-        new_members = []
-        if (depart_members := validated_data.get("members", None)):
-            org_members = org.members.all()
-            new_members = get_diff_objs(depart_members, org_members)
-        
+        depart_members = validated_data.get("members", None)
+            
         validated_data["created_by"] = user
         validated_data["org"] = org
         department = super().create(validated_data)
-
-        if new_members:
-            org.members.add(*new_members)
-            send_invitation_success_email(new_members, org.name)
+        
+        if depart_members:
+            org.add_no_exiting_members(depart_members)
 
         return department
 
@@ -277,11 +274,11 @@ class UpdateDepartmentSerializer(CreateDepartmentSerializer):
         pk_field=serializers.UUIDField(),
         required=True,
     )
-    members = serializers.PrimaryKeyRelatedField(
-        many=True,
+    members = ManyPrimaryKeyRelatedField(
         queryset=queryset_helpers.get_user_queryset(),
-        pk_field=serializers.UUIDField(),
         required=True,
+        serializer_class=UserSerializer,
+        allow_empty=True
     )
 
     def validate_name(self, value):
@@ -355,24 +352,18 @@ class UpdateDepartmentSerializer(CreateDepartmentSerializer):
             - If 'org' is provided in validated_data, 
             members(either on the instance or specified in request data) are added to that organization.
         """
-        new_member =[]
         members = validated_data.get("members", None)
         org = validated_data.get("org", None)
 
         if org:
             if members:
-                new_member = org.add_no_exiting_members(members)
+                org.add_no_exiting_members(members)
             else:
-                new_member = org.add_no_exiting_members(instance.members.all())
+                org.add_no_exiting_members(instance.members.all())
         else:
             if members:
-                new_member = instance.org.add_no_exiting_members(members)
+                instance.org.add_no_exiting_members(members)
 
         updated_data = super().update(instance, validated_data)
-
-        if new_member:
-            send_invitation_success_email(
-                new_member, org.name if org else instance.org.name
-            )
         
         return updated_data

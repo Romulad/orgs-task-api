@@ -132,6 +132,8 @@ class TestCreateDepartmentView(BaseTestClass):
             self.assertEqual(data.get('org').get('id'), str(self.created_org.id))
             self.assertIsNotNone(data.get('id'))
             self.assertEqual(len(data.get('members')), dep_member_count)
+            if dep_member_count:
+                self.assertIsNotNone(data.get('members')[0]["id"])
             # ressource state change
             Department.objects.get(name=dep_name, org=self.created_org, created_by=current_user)
             self.assertEqual(len(Department.objects.all()), test_data['dep_count'])

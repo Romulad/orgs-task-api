@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 from app_lib.models import AbstractBaseModel
 from app_lib.fn import get_diff_objs
+from app_lib.email import send_invitation_success_email
+
 
 class Organization(AbstractBaseModel):
   name = models.CharField(
@@ -47,8 +49,11 @@ class Organization(AbstractBaseModel):
       users (Iterable[User]): An iterable of user instances to be added to the organization.
     """
     new_users = get_diff_objs(users, self.members.all())
+
     if new_users:
       self.members.add(*new_users)
+      send_invitation_success_email(new_users, self.name)
+
     return new_users
   
 

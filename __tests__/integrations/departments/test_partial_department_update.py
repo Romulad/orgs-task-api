@@ -234,8 +234,10 @@ class TestPartialUpdateOrgDepartmentView(BaseTestClass):
         self.assertEqual(data.get("name"), first_depart.name)
         self.assertEqual(data.get("description"), first_depart.description)
         self.assertEqual(data.get("org"), str(new_org.id))
+        self.assertIsInstance(data.get("members"), list)
         self.assertEqual(len(data.get("members")), 1)
-        self.assertIn(str(simple_user.id), data.get("members"))
+        self.assertEqual(str(simple_user.id), data.get("members")[0]["id"])
+        self.assertIsNotNone(data.get("members")[0]["email"])
         # data is updated
         depart = Department.objects.get(name=first_depart.name)
         self.assertEqual(depart.org.id, new_org.id)

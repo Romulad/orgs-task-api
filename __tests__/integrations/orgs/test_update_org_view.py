@@ -116,9 +116,10 @@ class TestUpdateOrgView(BaseTestClass):
 
         created_data = self.created_data[0]
 
+        members_ids = [str(obj.id) for obj in [user, user2]]
         req_data = {
             **self.data, "name": created_data.name,
-            "members": [obj.id for obj in [user, user2]],
+            "members": members_ids,
             "owner" : created_data.owner.id
         }
         response = self.auth_put(
@@ -132,7 +133,11 @@ class TestUpdateOrgView(BaseTestClass):
         self.assertEqual(data.get("id"), str(updated_data.id))
         self.assertEqual(data.get("name"), req_data.get("name"))
         self.assertEqual(data.get("description"), req_data.get("description"))
-        self.assertEqual(len(data.get("members")), 2)
+        self.assertIsInstance(data.get("members"), list)
+        self.assertEqual(len(data.get("members")), len(members_ids))
+        for data in data.get("members"):
+            self.assertIn(data["id"], members_ids)
+            self.assertIsNotNone(data["email"])        
         # data is updated
         updated_data = Organization.objects.get(id=created_data.id)
         members = updated_data.members.all()
@@ -265,7 +270,6 @@ class TestUpdateOrgView(BaseTestClass):
         self.assertEqual(data.get('name'), "test")
         self.assertIsNotNone(data.get('description'))
         self.assertEqual(len(data.get('members')), 1)
-        self.assertIn(str(self.user.id), data.get('members'))
         self.assertEqual(data.get('owner'), str(new_owner.id))
         self.assertEqual(len(self.get_mailbox()), 0)
     

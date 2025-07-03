@@ -14,7 +14,8 @@ class TestUpdateDepartmentCanBeAccessByView(BaseTestClass):
     - validate owner user ids provide:
         - ids should exist
         - user that is making the request should have a full access over owner user specified
-    - only creator of org or depart can update depart owners
+    - only creator of org or depart or user with `CAN_CHANGE_RESSOURCES_OWNERS` 
+    can update depart owners
     - owners are successfully added to obj can_be_accessed_by list after request
     """
     url_name = "departments-change-owners"

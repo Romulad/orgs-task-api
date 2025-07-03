@@ -139,16 +139,21 @@ class TestPartialUpdateOrgView(BaseTestClass):
         org_data = self.created_data[0]
         org_data.can_be_accessed_by.add(can_access_org_user)
         
+        members_ids = [str(obj.id) for obj in [user, user2]]
         response = self.auth_patch(
             can_access_org_user,
-            {"members": [obj.id for obj in [user, user2]]}, 
+            {"members": members_ids}, 
             [org_data.id]
         )
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content)
         updated_data = Organization.objects.get(id=org_data.id)
         self.assertEqual(data.get("id"), str(updated_data.id))
-        self.assertEqual(len(data.get("members")), 2)
+        self.assertIsInstance(data.get("members"), list)
+        self.assertEqual(len(data.get("members")), len(members_ids))
+        for data in data.get("members"):
+            self.assertIn(data["id"], members_ids)
+            self.assertIsNotNone(data["email"])
         # data is updated
         updated_data = Organization.objects.get(id=org_data.id)
         members = updated_data.members.all()
@@ -233,17 +238,19 @@ class TestPartialUpdateOrgView(BaseTestClass):
         created_org = self.created_data[0]
         created_org.members.add(self.simple_user)
 
+        member_ids = [str(self.simple_user.id), str(user1.id)]
         req_data = {
             "owner": new_owner.id, 
-            "members": [self.simple_user.id, user1.id],
+            "members": member_ids,
         }
         response = self.auth_patch(self.owner, req_data, [created_org.id])
         self.assertEqual(response.status_code, self.status.HTTP_200_OK)
         data = self.loads(response.content)
         self.assertIsNotNone(data.get('name'))
         self.assertIsNotNone(data.get('description'))
-        self.assertEqual(len(data.get('members')), 2)
-        self.assertIn(str(self.simple_user.id), data.get('members'))
-        self.assertIn(str(user1.id), data.get('members'))
+        self.assertEqual(len(data.get('members')), len(member_ids))
+        for obj in data.get('members'):
+            self.assertIn(obj["id"], member_ids)
+            self.assertIsNotNone(obj["email"])
         self.assertEqual(data.get('owner'), str(new_owner.id))
         self.assertEqual(len(self.get_mailbox()), 1)

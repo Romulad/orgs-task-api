@@ -200,8 +200,10 @@ class TestUpdateOrgDepartmentView(BaseTestClass):
         self.assertEqual(data.get("name"), first_depart.name)
         self.assertEqual(data.get("description"), first_depart.description)
         self.assertEqual(data.get("org"), str(new_org.id))
+        self.assertIsInstance(data.get("members"), list)
         self.assertEqual(len(data.get("members")), 1)
-        self.assertIn(str(free_user.id), data.get("members"))
+        self.assertEqual(str(free_user.id), data.get("members")[0]['id'])
+        self.assertIsNotNone(data.get("members")[0]['email'])
         # data get updated
         depart = Department.objects.get(name=first_depart.name)
         members = depart.members.all()

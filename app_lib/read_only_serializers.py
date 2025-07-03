@@ -95,6 +95,10 @@ class DepartmentDeailSerializer(DepartmentSerializer):
         ]
 
 
+class CreateUpdateDepartResponseSerializer(DepartmentDeailSerializer):
+    org = serializers.PrimaryKeyRelatedField(read_only=True)
+
+
 # ======= Perm ========
 class PermDataSerializer(serializers.Serializer):
     name = serializers.CharField()

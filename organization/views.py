@@ -20,7 +20,8 @@ from app_lib.read_only_serializers import (
     OrganizationDetailSerializer,
     DepartmentSerializer,
     DepartmentDeailSerializer,
-    CreateUpdateOrgResponseSerializer
+    CreateUpdateOrgResponseSerializer,
+    CreateUpdateDepartResponseSerializer
 )
 from app_lib.permissions import (
     Can_Access_ObjectInstance,
@@ -225,4 +226,35 @@ class DepartmentViewset(FullModelViewSet):
         # ensure the org exists
         get_object_or_404(Organization, id=self.kwargs["id"])
         return obj
+
+    @schema_wrapper(
+        CreateDepartmentSerializer,
+        CreateUpdateDepartResponseSerializer,
+        status.HTTP_201_CREATED
+    )
+    def create(self, request, *args, **kwargs):
+        """
+        # Create a new department.
+        """
+        return super().create(request, *args, **kwargs)
+    
+    @schema_wrapper(
+        UpdateDepartmentSerializer,
+        CreateUpdateDepartResponseSerializer,
+    )
+    def update(self, request, *args, **kwargs):
+        """
+        # Update an existing department with the provided request data.
+        """
+        return super().update(request, *args, **kwargs)
+
+    @schema_wrapper(
+        UpdateDepartmentSerializer,
+        CreateUpdateDepartResponseSerializer,
+    )
+    def partial_update(self, request, *args, **kwargs):
+        """
+        # Partially updates a department with the provided data.
+        """
+        return super().partial_update(request, *args, **kwargs)
 
