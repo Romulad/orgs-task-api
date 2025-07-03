@@ -287,18 +287,29 @@ class TestCreateTaskView(BaseTestClass):
         }
         response = self.auth_post(self.owner_user, req_data)
         self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+
         # assert response data
         response_data = self.loads(response.content)
+        # name, org
         self.assertEqual(response_data["name"], req_data["name"])
         self.assertEqual(response_data["org"], str(self.org.id))
-        self.assertIn(str(self.simple_user.id), [user_id for user_id in response_data["assigned_to"]])
+        # assigned_to
+        self.assertIsInstance(response_data["assigned_to"], list)
+        self.assertEqual(str(self.simple_user.id), response_data["assigned_to"][0]["id"])
+        self.assertIsNotNone(response_data["assigned_to"][0]["email"])
+        # due_date, priority, status, estimated_duration, actual_duration
         self.assertEqual(response_data["due_date"], req_data["due_date"])
         self.assertEqual(response_data["priority"], req_data["priority"])
         self.assertEqual(response_data["status"], req_data["status"])
         self.assertEqual(response_data["estimated_duration"], req_data["estimated_duration"])
         self.assertEqual(response_data["actual_duration"], req_data["actual_duration"])
-        self.assertEqual(response_data["tags"][0], str(tag.id))
+        # tags
+        self.assertIsInstance(response_data["tags"], list)
+        self.assertEqual(response_data["tags"][0]['id'], str(tag.id))
+        self.assertIsNotNone(response_data["tags"][0]['name'])
+        # depart
         self.assertEqual(response_data["depart"], str(depart.id))
+
         # assert task is created
         self.assert_task_number(4)
         new_task = Task.objects.get(name=req_data["name"], org=self.org)

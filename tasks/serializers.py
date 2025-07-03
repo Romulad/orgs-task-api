@@ -12,7 +12,9 @@ from app_lib.fields import (
 from app_lib.app_permssions import CAN_CREATE_TASK
 from app_lib.read_only_serializers import (
     TaskDetailSerializer,
-    TaskSerializer
+    TaskSerializer,
+    UserSerializer,
+    TagSerializer
 )
 
 
@@ -156,6 +158,7 @@ class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
         required=False,
         allow_empty=True,
         help_text=_("Users assigned to this task"),
+        serializer_class=UserSerializer
     )
     due_date = serializers.DateTimeField(
         required=False,
@@ -203,7 +206,8 @@ class CreateTaskSerializer(CreateUpdateTaskBaseSerializer):
         help_text=_("Tags associated with the task"),
         error_messages={
             'does_not_exist': _("One or more specified tags do not exist."),
-        }
+        },
+        serializer_class=TagSerializer
     )
     depart = serializers.PrimaryKeyRelatedField(
         queryset=queryset_helpers.get_depart_queryset(only_select_related=True),
@@ -291,6 +295,7 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
         queryset=queryset_helpers.get_user_queryset(),
         allow_empty=True,
         help_text=_("Users assigned to this task"),
+        serializer_class=UserSerializer
     )
     due_date = DefaultDateTimeField(
         required=True,
@@ -334,6 +339,7 @@ class UpdateTaskSeriliazer(CreateTaskSerializer):
         required=True,
         allow_empty=True,
         help_text=_("Tags associated with the task"),
+        serializer_class=TagSerializer
     )
     depart = serializers.PrimaryKeyRelatedField(
         queryset=queryset_helpers.get_depart_queryset(only_select_related=True),

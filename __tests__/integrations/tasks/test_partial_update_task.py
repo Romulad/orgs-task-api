@@ -326,8 +326,14 @@ class TestPartialUpdateTaskView(BaseTestClass):
             self.assertIsNotNone(data["status"])
             self.assertIsNone(data["estimated_duration"])
             self.assertIsNone(data["actual_duration"])
-            self.assertIsNotNone(data.get("tags"))
+            # tags
+            self.assertIsInstance(data.get("tags"), list)
+            # assigned_to
+            self.assertEqual(data["assigned_to"][0]["id"], str(self.simple_user.id))
+            self.assertIsNotNone(data["assigned_to"][0]["email"])
+            # depart
             self.assertEqual(data["depart"], str(new_depart.id))
+
             # assert task is updated
             self.target_task.refresh_from_db(fields=['depart'])
             self.assertEqual(self.target_task.depart.id, new_depart.id)

@@ -4,6 +4,7 @@ from django.db.models.query import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import status
 
 from app_lib.views import FullModelViewSet
 from app_lib.queryset import queryset_helpers
@@ -14,10 +15,13 @@ from tasks.serializers import (
 )
 from app_lib.read_only_serializers import (
     TaskSerializer,
-    TaskDetailSerializer
+    TaskDetailSerializer,
+    CreateUpdateTaskResponseSerializer
 )
 from app_lib.permissions import Can_Access_Org_Depart_Or_Obj
+from app_lib.decorators import schema_wrapper
 from .filters import TaskDataFilter
+
 
 class TaskViewSet(FullModelViewSet):
     serializer_class = TaskSerializer
@@ -65,6 +69,41 @@ class TaskViewSet(FullModelViewSet):
             self.permission_classes = [IsAuthenticated, Can_Access_Org_Depart_Or_Obj]
         return super().get_permissions()
 
+    @schema_wrapper(
+        CreateTaskSerializer,
+        CreateUpdateTaskResponseSerializer,
+        status.HTTP_201_CREATED
+    )
+    def create(self, request, *args, **kwargs):
+        """
+        # Create a new Task.
+        """
+        return super().create(request, *args, **kwargs)
+    
+    @schema_wrapper(
+        UpdateTaskSeriliazer,
+        CreateUpdateTaskResponseSerializer,
+    )
+    def update(self, request, *args, **kwargs):
+        """
+        # Update an existing task with the provided request data.
+        """
+        return super().update(request, *args, **kwargs)
+
+    @schema_wrapper(
+        UpdateTaskSeriliazer,
+        CreateUpdateTaskResponseSerializer,
+    )
+    def partial_update(self, request, *args, **kwargs):
+        """
+        # Partially updates task with the provided data.
+        """
+        return super().partial_update(request, *args, **kwargs)
+
+    @schema_wrapper(
+        UpdateTaskStatusSerializer,
+        UpdateTaskStatusSerializer
+    )
     @action(
         detail=True,
         methods=[HTTPMethod.PATCH],
@@ -73,6 +112,9 @@ class TaskViewSet(FullModelViewSet):
         serializer_class=UpdateTaskStatusSerializer
     )
     def update_status(self, request, **kwargs):
+        """
+        # Update Task status.
+        """
         obj = self.get_object()
         serializer = self.get_serializer(obj, data=request.data)
         serializer.is_valid(raise_exception=True)

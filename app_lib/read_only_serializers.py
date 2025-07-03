@@ -251,6 +251,11 @@ class TaskDetailSerializer(TaskSerializer):
         ]
 
 
+class CreateUpdateTaskResponseSerializer(TaskDetailSerializer):
+    org = serializers.PrimaryKeyRelatedField(read_only=True)
+    depart = serializers.PrimaryKeyRelatedField(read_only=True)
+
+
 #======= User detail ==============
 class AuthorizationField(serializers.Serializer):
     org = OrganizationSerializer(read_only=True)
