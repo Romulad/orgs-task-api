@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Account Created Notification</title>
+</head>
+<body>
+    <h1>Welcome to Our Platform!</h1>
+    <p>Dear {{ first_name }},</p>
+    <p>Your account has been successfully created. We're excited to have you on board!</p>
+    <p>We recommend you to reset your password, please click the link below:</p>
+    <p>
+        <a href="{{ base_url }}{% url 'password_reset_confirm' uuid token %}" style="color: #007bff; text-decoration: none;">
+            Set/Reset Your Password
+        </a>
+    </p>
+    <p>Once your password is set, you can log in to your account using the following link:</p>
+    <p>
+        <a href="{{ base_url }}{% url 'login' %}" style="color: #007bff; text-decoration: none;">
+            Log In to Your Account
+        </a>
+    </p>
+    <p>If you have any questions, feel free to contact our support team.</p>
+    <p>Best regards,</p>
+    <p>The Team</p>
+</body>
+</html>
