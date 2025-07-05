@@ -182,4 +182,5 @@ user_stories.todo
 .pytest_cache
 app_process.txt
 .coverage
+.coveragerc
 z.markdown

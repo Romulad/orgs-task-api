@@ -1,5 +1,0 @@
-[run]
-omit =
-    __tests__/**/*
-    manage.py
-    */migrations/**
