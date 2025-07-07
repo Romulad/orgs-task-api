@@ -200,5 +200,38 @@ class AuthorizationChecker:
             return True
         
         return False
+    
+    def can_add_creator_level_perms(
+        self, 
+        perms: str|list[str], 
+        org: Organization,
+        user: User
+    ):
+        """
+        If `perms` contains creator level permission, check if `user` can add it to someone 
+        in `org`.
+        - Currently only org creator can add creator level permission to someone in an org
+        Args:
+            user: The user object
+            org: The organization in which the permission will be added to someone
+            perms: `str` or `list[str]` that will be added to someone in `org`
+        Returns:
+            bool: Indicating if the user has the necessary permission to add creator level permission 
+            to someone in `org` if `perms` contains such perms.
+        """
+        
+        # Creator has permission to add any permission to anyone in his org
+        creator_id = getattr(org.created_by, "id", None)
+        if creator_id == user.id:
+            return True
+        
+        _, found, _ = permissions_exist(perms)
+
+        creator_level_perms = get_perm_list(creator_only=True)
+        for perm_str in found:
+            if perm_str in creator_level_perms:
+                return False
+            
+        return True
 
 auth_checker = AuthorizationChecker()

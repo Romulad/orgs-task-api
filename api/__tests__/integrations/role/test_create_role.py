@@ -17,8 +17,11 @@ class TestCreateRoleView(BaseTestClass):
             - field is required
             - org id should be a valid id
             - user making the request should have permission to act on the org
-        - perms :
+        - perms:
             - field is optional and can be empty list
+            - if exist:
+                - no org creator user can not create role with creator level permission
+                - only creator can create role with creator level permission
         - users if specified:
             - should be a valid value
             - user ids should be valid user ids
@@ -116,9 +119,43 @@ class TestCreateRoleView(BaseTestClass):
             errors = self.loads(response.content).get("users")
             self.assertIsInstance(errors, list)
         self.assert_no_more_role_created(0)
-    
+
+    def test_no_creator_can_not_create_role_with_creator_level_perm(self):
+        creator_granted_perms = get_perm_list()
+
+        can_access_org_user = self.create_and_activate_random_user()
+        self.org.can_be_accessed_by.add(can_access_org_user)
+
+        req_data = {
+            "name": "Manager",
+            "org": self.org.id,
+            "perms": creator_granted_perms
+        }
+
+        for user in [
+            can_access_org_user,
+            self.owner,
+        ]:
+            response = self.auth_post(user, req_data)
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            errors = self.loads(response.content).get("perms")
+            self.assertIsInstance(errors, list)
+        self.assert_no_more_role_created(0)
+
+    def test_creator_can_create_role_creator_level_perm(self):
+        creator_granted_perms = get_perm_list(creator_only=True)[:5]
+
+        req_data = {
+            "name": "Manager",
+            "org": self.org.id,
+            "perms": creator_granted_perms
+        }
+        response = self.auth_post(self.creator, req_data)
+        self.assertEqual(response.status_code, self.status.HTTP_201_CREATED)
+        self.assert_no_more_role_created(1)
+
     def test_successfull_role_creation(self):
-        real_perm = get_perm_list()[:5]
+        real_perm = get_perm_list(default_only=True)[:5]
         role_perms = real_perm + ["fake_perm_", "random_PERM"]
 
         can_access_org_user = self.create_and_activate_random_user()

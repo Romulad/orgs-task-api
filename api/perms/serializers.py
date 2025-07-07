@@ -7,6 +7,11 @@ from app_lib.authorization import auth_checker
 from .models import Role
 from app_lib.app_permssions import permissions_exist
 from app_lib.read_only_serializers import RoleDetailSerializer
+from app_lib.common_error_messages import (
+    ORG_ACCESS_ISSUE_MESSAGE, 
+    CREATOR_LEVEL_PERM_ISSUE_MESSAGE,
+    OWNER_ACCESS_OVER_USERS_ISSUE_MESSAGE
+)
 
 
 class AddPermissionsSerializer(serializers.Serializer):
@@ -32,19 +37,28 @@ class AddPermissionsSerializer(serializers.Serializer):
         user = self.context['request'].user
         if not auth_checker.has_access_to_obj(org, user):
             raise serializers.ValidationError(
-                _("You need to have access to the organization")
+               ORG_ACCESS_ISSUE_MESSAGE
             )
         return org
 
     def validate(self, attrs):
+        user = self.context['request'].user
         users = attrs["user_ids"]
         org = attrs["org"]
+        perms = attrs["perms"]
 
         if not auth_checker.has_access_to_objs(
             users, org.owner
         ):
             raise serializers.ValidationError({
-                "user_ids": [_('The org owner need to have a full access over users')]
+                "user_ids": [OWNER_ACCESS_OVER_USERS_ISSUE_MESSAGE]
+            })
+        
+        if perms and not auth_checker.can_add_creator_level_perms(
+            perms, org, user
+        ):
+            raise serializers.ValidationError({
+                "perms": [CREATOR_LEVEL_PERM_ISSUE_MESSAGE]
             })
 
         return attrs
@@ -101,7 +115,7 @@ class CreateRoleSerializer(RoleDetailSerializer):
         user = self.context['request'].user
         if not auth_checker.has_access_to_obj(org, user):
             raise serializers.ValidationError(
-                _("You need to have access to the organization")
+                ORG_ACCESS_ISSUE_MESSAGE
             )
         return org
     
@@ -123,14 +137,23 @@ class CreateRoleSerializer(RoleDetailSerializer):
         return found
     
     def validate(self, attrs):
+        user = self.context['request'].user
         org = attrs.get("org")
+        perms = attrs.get("perms")
 
         users = attrs.get("users", None)
         if users:
             if not auth_checker.has_access_to_objs(users, org.owner):
                 raise serializers.ValidationError({"users": [
-                    _("The org owner need to have access to all users")
+                    OWNER_ACCESS_OVER_USERS_ISSUE_MESSAGE
                 ]})
+        
+        if perms and not auth_checker.can_add_creator_level_perms(
+            perms, org, user
+        ):
+            raise serializers.ValidationError({
+                "perms": [CREATOR_LEVEL_PERM_ISSUE_MESSAGE]
+            })
 
         return attrs
     
@@ -203,19 +226,40 @@ class UpdateRoleSerializer(CreateRoleSerializer):
         return org
 
     def validate(self, attrs):
+        user = self.context['request'].user
         org = attrs.get("org")
         users = attrs.get("users")
+        perms = attrs.get("perms")
 
         if users:
-            if org:
-                return super().validate(attrs)
-            # users is specified, no org, make sure the existing org owner has access to users
+            users_error_obj = serializers.ValidationError({"users": [
+                OWNER_ACCESS_OVER_USERS_ISSUE_MESSAGE
+            ]})
+            # users is specified, make sure the specified org owner has access to users
+            if org and not auth_checker.has_access_to_objs(
+                users, org.owner
+            ):
+                raise users_error_obj
+            # users is specified, no org, make sure the existing role org owner has access to users
             elif not org and not auth_checker.has_access_to_objs(
                 users, self.instance.org.owner
             ):
-                raise serializers.ValidationError({"users": [
-                    _("The role org owner need to have access to all specified users")
-                ]})
+                raise users_error_obj
+        
+        if perms:
+            # perms is specified, make sure the user making the request can add creator level 
+            # perms if such perms is in the request data
+            perm_error_obj = serializers.ValidationError({"perms": [
+                CREATOR_LEVEL_PERM_ISSUE_MESSAGE
+            ]})
+            if org and not auth_checker.can_add_creator_level_perms(
+                perms, org, user
+            ):
+                raise perm_error_obj
+            elif not org and not auth_checker.can_add_creator_level_perms(
+                perms, self.instance.org, user
+            ):
+                raise perm_error_obj
 
         return attrs
 

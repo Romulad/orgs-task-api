@@ -34,6 +34,9 @@ class TestPartialUpdateRoleView(BaseTestClass):
             - user ids should be valid
             - if org in request data, org specified owner should have a full access over users
             - otherwise existing role org owner should have a full access over users
+        - perms if specified:
+            - no org creator user can not update role with creator level perms
+            - org creator can update perms with creator level perms
     - test user with access:
         - org owner
         - org creator and role creator
@@ -48,6 +51,36 @@ class TestPartialUpdateRoleView(BaseTestClass):
         self.owner_user, self.org_creator, self.org = self.create_new_org()
         self.role_creator, self.target_role = self.create_new_role(self.org)
         self.roles = [self.create_new_role(self.org)[-1] for _ in range(10)]
+    
+    def get_users_with_access(self, to=None):
+        can_access_org_user = self.create_and_activate_random_user()
+        self.org.can_be_accessed_by.add(can_access_org_user)
+
+        org_member_with_perm = self.create_and_activate_random_user()
+        self.org.members.add(org_member_with_perm)
+        self.org.can_be_accessed_by.add(org_member_with_perm)
+ 
+        role_creator = self.create_and_activate_random_user()
+        can_access_role_user = self.create_and_activate_random_user()
+
+        if to:
+            to.created_by = role_creator
+            to.save()
+            to.can_be_accessed_by.add(can_access_role_user)
+        else:
+            for role in self.roles:
+                role.created_by = role_creator
+                role.save()
+                role.can_be_accessed_by.add(can_access_role_user)
+
+        return [
+            self.owner_user,
+            self.org_creator,
+            can_access_org_user,
+            org_member_with_perm,
+            role_creator,
+            can_access_role_user
+        ]
 
     def test_only_authenticated_user_can_access(self):
         self.evaluate_method_unauthenticated_request(
@@ -218,32 +251,37 @@ class TestPartialUpdateRoleView(BaseTestClass):
         self.assertEqual(self.target_role.org.id, self.org.id)
         self.assertEqual(len(self.target_role.users.all()), 0)
     
+    def test_no_org_creator_can_not_update_role_with_creator_level_perm(self):
+        creator_granted_perms = get_perm_list()
+
+        users = self.get_users_with_access(to=self.target_role)
+        users.remove(self.org_creator)
+
+        req_data = {
+            "org": self.org.id,
+            "perms": creator_granted_perms
+        }
+        for user in users:
+            response = self.auth_patch(user, req_data, [self.target_role.id])
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            errors = self.loads(response.content).get("perms")
+            self.assertIsInstance(errors, list)
+        self.target_role.refresh_from_db()
+        self.assertEqual(self.target_role.get_perms(), [])
+    
+    def test_creator_can_update_role_with_creator_level_perms(self):
+        perms = get_perm_list()
+        req_data = {
+            "perms": perms
+        }
+        response = self.auth_patch(self.org_creator, req_data, [self.target_role.id])
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        self.target_role.refresh_from_db()
+        self.assertEqual(len(self.target_role.get_perms()), len(perms))
+    
     def test_user_with_access_can_update_role(self):
-        can_access_org_user = self.create_and_activate_random_user()
-        self.org.can_be_accessed_by.add(can_access_org_user)
-
-        org_member_with_perm = self.create_and_activate_random_user()
-        self.org.members.add(org_member_with_perm)
-        self.org.can_be_accessed_by.add(org_member_with_perm)
- 
-        role_creator = self.create_and_activate_random_user()
-        can_access_role_user = self.create_and_activate_random_user()
-
-        for role in self.roles:
-            role.created_by = role_creator
-            role.save()
-            role.can_be_accessed_by.add(can_access_role_user)
-
-        users = [
-            self.owner_user,
-            self.org_creator,
-            can_access_org_user,
-            org_member_with_perm,
-            role_creator,
-            can_access_role_user
-        ]
-
-        real_perms = get_perm_list()[:5]
+        users = self.get_users_with_access()
+        real_perms = get_perm_list(default_only=True)[:5]
         req_data = {
             "org": self.org.id,
             "perms": real_perms + ["fake_perm_", "random_PERM"]

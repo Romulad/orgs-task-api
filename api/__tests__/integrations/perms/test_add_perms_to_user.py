@@ -20,6 +20,8 @@ class TestAddPermsToUserView(BaseTestClass):
         - `perms`:
             - this field is required and should include list of string permission to apply to users
             - the field should not be empty
+            - other user than org creator can not add creator level perm to someone
+            - only org creator can add creator level permission to users
     - test perms are successfully apply to users and we have success response with added and not found perms
     - test users is automatically add as member of the org when no member already
     - test validate perm string is add to user perm list when invalid perm and valid perm are sent and 
@@ -130,6 +132,38 @@ class TestAddPermsToUserView(BaseTestClass):
             errors = self.loads(response.content).get("perms")
             self.assertIsInstance(errors, list)
         self.assert_permissions_obj_len()
+
+    def test_no_creator_cant_add_creator_perm_to_user(self):
+        can_access_org_user = self.create_and_activate_random_user()
+        self.org.can_be_accessed_by.add(can_access_org_user)
+
+        creator_granted_perms = get_perm_list()
+        req_data = {
+            "org": self.org.id,
+            "user_ids": self.get_ids_from(self.users),
+            "perms": creator_granted_perms
+        }
+
+        for user in [
+            self.owner,
+            can_access_org_user
+        ]:
+            response = self.auth_post(user, req_data)
+            self.assertEqual(response.status_code, self.status.HTTP_400_BAD_REQUEST)
+            errors = self.loads(response.content).get("perms")
+            self.assertIsInstance(errors, list)
+        self.assert_permissions_obj_len()
+
+    def test_creator_can_add_any_perm_to_user(self):
+        all_perms = get_perm_list()
+        req_data = {
+            "org": self.org.id,
+            "user_ids": self.get_ids_from(self.users),
+            "perms": all_perms
+        }
+        response = self.auth_post(self.creator, req_data)
+        self.assertEqual(response.status_code, self.status.HTTP_200_OK)
+        self.assert_permissions_obj_len(len(self.users))
     
     def test_perms_with_invalid_perm_value_should_not_trigger_error(self):
         req_data = {
@@ -148,7 +182,7 @@ class TestAddPermsToUserView(BaseTestClass):
         can_access_user = self.create_and_activate_random_user()
         self.org.can_be_accessed_by.add(can_access_user)
 
-        perms = get_perm_list()[:8]
+        perms = get_perm_list(default_only=True)[:8]
         req_data = {
             "org": self.org.id,
             "user_ids": self.get_ids_from(self.users),
@@ -188,7 +222,7 @@ class TestAddPermsToUserView(BaseTestClass):
         [self.assertIn(user, members) for user in self.users]
     
     def test_successfully_add_perm_with_invalid_perm(self):
-        perms = get_perm_list()[:8] 
+        perms = get_perm_list(default_only=True)[:8] 
         wrong_perms = ["somePermission", "NOTFOUND_permission"]
         all_perms = perms + wrong_perms
         req_data = {
