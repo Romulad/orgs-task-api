@@ -111,6 +111,7 @@ class TestListTaskView(BaseTestClass):
             d_ids = [str(obj.id) for obj in depart_tasks]
             for result in data:
                 self.assertIn(result["id"], d_ids)
+                self.assertIsNotNone(result["created_by"])
     
     def test_user_assigne_to_task_get_needed_data(self):
         assigne_user = self.create_and_activate_random_user()

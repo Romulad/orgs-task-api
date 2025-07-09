@@ -30,6 +30,7 @@ class TestRetrieveOrgView(BaseTestClass):
         orgs_data = [*self.orgs_data]
         for data in orgs_data:
             data["owner"] = self.owner
+            data["created_by"] = self.owner
         self.created_data = self.bulk_create_object(Organization, orgs_data)
         self.simple_user = self.create_and_activate_random_user()
 
@@ -72,6 +73,7 @@ class TestRetrieveOrgView(BaseTestClass):
         self.assertEqual(data.get("id"), str(self.created_data[0].id))
         self.assertEqual(data.get("name"), self.created_data[0].name)
         self.assertEqual(data.get("owner").get("id"), str(self.owner.id))
+        self.assertEqual(data.get("created_by").get("id"), str(self.owner.id))
         self.assertIsInstance(data.get("members"), list)
         self.assertIsNotNone(data.get("description"))
     

@@ -76,4 +76,5 @@ class TestGetTagView(BaseTestClass):
             self.assertEqual(data.get("description"), target_tag.description)
             self.assertIsInstance(data.get("can_be_accessed_by"), list)
             self.assertIsNotNone(data.get("created_at"))
+            self.assertIsNotNone(data.get("created_by"))
 

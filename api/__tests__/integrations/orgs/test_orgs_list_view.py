@@ -60,6 +60,7 @@ class TestListOrgView(BaseTestClass):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["name"], target_org.name)
         self.assertEqual(data[0]["owner"]["id"], str(self.owner_user.id))
+        self.assertEqual(data[0]["created_by"]["id"], str(self.creator.id))
     
     def test_members_can_get_org_data(self):
         target_org = self.orgs[0]

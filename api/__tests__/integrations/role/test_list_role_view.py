@@ -82,6 +82,7 @@ class TestListRoleView(BaseTestClass):
                 self.assertIsInstance(result.get("perms"), list)
                 self.assertEqual(result.get("org").get("id"), str(self.org.id))
                 self.assertIsNotNone(result.get("created_at"))
+                self.assertIsNotNone(result.get("created_by"))
     
     def test_data_can_be_filtered(self):
         target_role = self.roles[0]

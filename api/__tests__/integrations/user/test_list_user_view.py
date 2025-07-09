@@ -60,6 +60,7 @@ class TestListUserView(BaseTestClass):
             self.assertIsNotNone(data[0]["first_name"])
             self.assertIsNotNone(data[0]["id"])
             self.assertIsNotNone(data[0]["created_at"])
+            self.assertIsNotNone(data[0]["created_by"])
             self.assertIsNotNone(data[0]["last_name"])
             with self.assertRaises(KeyError):
                 data[0]["password"]

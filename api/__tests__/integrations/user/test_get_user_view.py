@@ -75,6 +75,7 @@ class TestRetrieveUserView(BaseTestClass):
             self.assertEqual(data.get("first_name"), wanted_user.first_name)
             self.assertEqual(data.get("last_name"), wanted_user.last_name)
             self.assertIsNotNone(data.get("created_at", None))
+            self.assertIsNotNone(data.get("created_by", None))
             with self.assertRaises(KeyError):
                 data["password"]
     

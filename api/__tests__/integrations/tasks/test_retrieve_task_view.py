@@ -115,6 +115,7 @@ class TestRetrieveTaskView(BaseTestClass):
             self.assertEqual(data.get("assigned_to")[0]["email"], assigned_user.email)
             self.assertEqual(data.get("org")["id"], str(target_ressource.org.id))
             self.assertEqual(data.get("depart")["id"], str(new_depart.id))
+            self.assertIsNotNone(data.get("created_by", None))
 
 
             

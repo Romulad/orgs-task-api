@@ -31,6 +31,7 @@ class TestRetrieveOrgDepartmentView(BaseTestClass):
         departs_data = [*self.departs_data]
         for data in departs_data:
             data["org"] = self.org
+            data["created_by"] = self.creator
         self.created_data = self.bulk_create_object(Department, departs_data)
 
     def test_only_authenticated_user_can_access(self):
@@ -73,6 +74,7 @@ class TestRetrieveOrgDepartmentView(BaseTestClass):
             self.assertEqual(data.get('org').get('id'), str(self.org.id))
             self.assertIsInstance(data.get('members'), list)
             self.assertEqual(len(data.get('members')), 0)
+            self.assertIsNotNone(data.get('created_by', None))
     
     def test_access_allowed_user_on_depart_can_get_data(self):
         depart_creator = self.create_and_activate_random_user()

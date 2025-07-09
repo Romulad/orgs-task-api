@@ -14,6 +14,7 @@ from tasks.models import Task
 class UserSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
+    created_by = serializers.PrimaryKeyRelatedField(read_only=True)
     first_name = serializers.ReadOnlyField()
     last_name  = serializers.ReadOnlyField()
     email = serializers.ReadOnlyField()
@@ -25,7 +26,8 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
-            "created_at"
+            "created_at",
+            "created_by"
         ]
    
 
@@ -34,6 +36,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
     owner = UserSerializer(read_only=True)
+    created_by = UserSerializer(read_only=True)
     name = serializers.ReadOnlyField()
     description = serializers.ReadOnlyField()
 
@@ -44,7 +47,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "owner",
-            "created_at"
+            "created_at",
+            "created_by"
         ]
 
 
@@ -71,6 +75,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
     description = serializers.ReadOnlyField()
     org = OrganizationSerializer(read_only=True)
     created_at = serializers.ReadOnlyField()
+    created_by = UserSerializer(read_only=True)
 
     class Meta:
         model = Department
@@ -80,6 +85,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
             'description',
             'org',
             'created_at',
+            'created_by'
         ]
 
 
@@ -157,12 +163,14 @@ class SimpleRoleSerializer(serializers.ModelSerializer):
 
 class RoleSerializer(SimpleRoleSerializer):
     org = OrganizationSerializer(read_only=True)
+    created_by = UserSerializer(read_only=True)
 
     class Meta:
         model = Role
         fields = [
             *SimpleRoleSerializer.Meta.fields,
             "org",
+            "created_by"
         ]
 
 
@@ -182,12 +190,13 @@ class RoleDetailSerializer(RoleSerializer):
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ['id', 'name', 'description', 'created_at']
+        fields = ['id', 'name', 'description', 'created_at', "created_by"]
         extra_kwargs = {
             'id': {'read_only': True},
             'name': {'read_only': True},
             'description': {'read_only': True},
             'created_at': {'read_only': True},
+            'created_by': {'read_only': True},
         }
 
 class TagDetailSerializer(TagSerializer):
@@ -220,6 +229,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'estimated_duration',
             "actual_duration",
             "created_at",
+            "created_by",
         ]
         extra_kwargs = {
             'id': {'read_only': True},
@@ -231,6 +241,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'estimated_duration': {'read_only': True},
             'actual_duration': {'read_only': True},
             'created_at': {'read_only': True},
+            'created_by': {'read_only': True},
         }
 
 

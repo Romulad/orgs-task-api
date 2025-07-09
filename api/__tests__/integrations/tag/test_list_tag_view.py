@@ -73,6 +73,7 @@ class TestListTagView(BaseTestClass):
                 self.assertIsNotNone(result.get("name"))
                 self.assertIsNone(result.get("description", 'none'))
                 self.assertIsNotNone(result.get("created_at"))
+                self.assertIsNotNone(result.get("created_by"))
     
     def test_data_can_be_filtered(self):
         target_tag = self.tags[0]

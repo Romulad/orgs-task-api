@@ -78,4 +78,5 @@ class TestGetRoleView(BaseTestClass):
             self.assertIsInstance(data.get("perms"), list)
             self.assertIsInstance(data.get("can_be_accessed_by"), list)
             self.assertIsNotNone(data.get("created_at"))
+            self.assertIsNotNone(data.get("created_by"))
 

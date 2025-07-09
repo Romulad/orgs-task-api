@@ -73,6 +73,7 @@ class TestListOrgDepartmentView(BaseTestClass):
             self.assertEqual(first_data.get('org').get('id'), str(self.org.id))
             self.assertIsNotNone(first_data.get('id', None))
             self.assertIsNotNone(first_data.get('created_at', None))
+            self.assertIsNotNone(first_data.get('created_by', None))
 
     def test_access_allowed_user_on_depart_only_can_access_depart(self):
         can_access_depart_user = self.create_and_activate_random_user()
