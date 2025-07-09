@@ -73,7 +73,7 @@ class OrganizationViewset(FullModelViewSet):
             Q(owner=user) |
             Q(can_be_accessed_by=user) |
             Q(members=user)
-        )
+        ).distinct()
     
     def get_object(self) -> Organization:
         return super().get_object()

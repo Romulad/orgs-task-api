@@ -206,7 +206,7 @@ class DefaultModelViewSet(ModelViewSet):
         if with_self_data:
             filters = filters |  Q(id=user.id)
 
-        return queryset.filter(filters)
+        return queryset.filter(filters).distinct()
 
     def check_objects_permissions(self, request, objs):
         """

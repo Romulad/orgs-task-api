@@ -104,6 +104,7 @@ class PermDataSerializer(serializers.Serializer):
     name = serializers.CharField()
     label = serializers.CharField()
     help_text = serializers.CharField()
+    org_creator_only = serializers.BooleanField(default=False)
 
 
 class SimpleUserPermissionSerializer(serializers.ModelSerializer):

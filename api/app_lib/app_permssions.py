@@ -7,15 +7,18 @@ CAN_CREATE_TAG = "can_create_tag"
 APP_PERMISSIONS = {
     CAN_CREATE_DEPART: {
         "name": _("Can create depart"),
-        "help_text": _("Any user with this permission can create departments in the given organization")
+        "help_text": _("Any user with this permission can create departments in the given organization"),
+        "org_creator_only": False,
     },
     CAN_CREATE_TASK: {
         "name": _("Can create task"),
-        "help_text": _("Any user with this permission can create tasks in the given organization")
+        "help_text": _("Any user with this permission can create tasks in the given organization"),
+        "org_creator_only": False,
     },
     CAN_CREATE_TAG: {
         "name": _("Can create tag"),
-        "help_text": _("Any user with this permission can create tags in the given organization")
+        "help_text": _("Any user with this permission can create tags in the given organization"),
+        "org_creator_only": False,
     }
 }
 
@@ -26,7 +29,8 @@ CREATOR_ONLY_PERMS = {
         "help_text": _(
             "Any user with this permission can change any ressource " \
             "owners in the given organization"
-        )
+        ),
+        "org_creator_only": True,
     }
 }
 
