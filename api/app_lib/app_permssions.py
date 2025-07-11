@@ -101,7 +101,8 @@ def get_perm_data(perms:list[str]):
         {
             "name": "string",
             "label": "string",
-            "help_text": "string"
+            "help_text": "string",
+            "org_creator_only": bool,
         },
         ...
     ]

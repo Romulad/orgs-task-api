@@ -1,0 +1,4975 @@
+openapi: 3.0.3
+info:
+  title: Organization Management Platform
+  version: 1.0.0
+  description: "API built to help teams **create**, **organize**, and **manage** organizations,\
+    \ \n    their **departments**, **users**, **tasks**, and **permissions**."
+  contact:
+    name: Romuald Oluwatobi
+    url: https://github.com/Romulad
+paths:
+  /auth/register/:
+    post:
+      operationId: auth_register_create
+      description: |-
+        # Create a new user
+        Use this endpoint to create a **new** account
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Registration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Registration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Registration'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /auth/activate/{uuid}/{token}/:
+    get:
+      operationId: auth_activate_retrieve
+      description: |-
+        # Validate user account after creation
+        Email is automatically send when user link is invalid and user
+        account still inactive
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: uuid
+        schema:
+          type: string
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalMessageResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /auth/reset-password/:
+    post:
+      operationId: auth_reset_password_create
+      description: |-
+        # Request a password reset
+        Use this endpoint to request a password reset email
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalMessageResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /auth/reset-password/{uuid}/{token}/complete/:
+    post:
+      operationId: auth_reset_password_complete_create
+      description: '# Reset user password using token'
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: uuid
+        schema:
+          type: string
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalMessageResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /users/:
+    get:
+      operationId: users_list
+      description: |-
+        # Get users
+        Retrieves a paginated list of user data accessible to the authenticated user.
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - in: query
+        name: created_at
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: email
+        schema:
+          type: string
+        description: Exact match
+      - in: query
+        name: email_contains
+        schema:
+          type: string
+        description: Contains
+      - in: query
+        name: email_endswith
+        schema:
+          type: string
+        description: Ends with
+      - in: query
+        name: email_startswith
+        schema:
+          type: string
+        description: Starts with
+      - in: query
+        name: first_name
+        schema:
+          type: string
+        description: Exact match
+      - in: query
+        name: first_name_contain
+        schema:
+          type: string
+        description: Contains
+      - in: query
+        name: first_name_endswith
+        schema:
+          type: string
+        description: Ends with
+      - in: query
+        name: first_name_startswith
+        schema:
+          type: string
+        description: Starts with
+      - in: query
+        name: id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: last_name
+        schema:
+          type: string
+        description: Exact match
+      - in: query
+        name: last_name_contain
+        schema:
+          type: string
+        description: Contains
+      - in: query
+        name: last_name_endswith
+        schema:
+          type: string
+        description: Ends with
+      - in: query
+        name: last_name_startswith
+        schema:
+          type: string
+        description: Starts with
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search through fields
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    post:
+      operationId: users_create
+      description: |-
+        # Creates an user.
+        This endpoint allows an authenticated user to create a new user account.
+        On success, the user is created and a notification email is sent to the newly created user.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUser'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /users/bulk-delete/:
+    delete:
+      operationId: users_bulk_delete_destroy
+      description: |-
+        # Handles bulk deletion of user resources.
+
+        **Note** : Only user itself or his creator can perform this action
+
+        This endpoint allows authenticated user to request the deletion of multiple user
+        resources by providing their IDs using an `ids` field in the request data.
+
+        If the request contains user IDs that the authenticated user does not have permission to delete,
+        an error response is returned.
+
+        Resources are not physically deleted but are marked as deleted. On successful deletion,
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent user IDs, a success response is
+        returned detailing which resources were deleted and which IDs were not found.
+
+        If all provided IDs are not found, a 404 error response is returned with an
+        appropriate error message.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /users/me/:
+    get:
+      operationId: users_me_retrieve
+      description: '# Get the authenticated user data'
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /users/{id}/:
+    get:
+      operationId: users_retrieve
+      description: |-
+        # Retrieve a user's data.
+        Returns the details of a user specified by the request.
+        Allows users to retrieve their own data or other user's data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    put:
+      operationId: users_update
+      description: |-
+        # Update an user data.
+        All fields should be present.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUser'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    delete:
+      operationId: users_destroy
+      description: |-
+        # Deletes a user instance.
+        The deletion is performed by marking the user as deleted by default.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    patch:
+      operationId: users_partial_update
+      description: '# Update field(s) on the user data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUser'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /users/{id}/change-owners/:
+    post:
+      operationId: users_change_owners_create
+      description: |-
+        # Change the owners of the object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /users/{id}/change-password/:
+    post:
+      operationId: users_change_password_create
+      description: '# Change user password'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserPassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateUserPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateUserPassword'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /perms/:
+    get:
+      operationId: perms_list
+      description: '# Retrieve all available permissions.'
+      tags:
+      - perms
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermData'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /perms/add/:
+    post:
+      operationId: perms_add_create
+      description: '# Add a set of permissions to users'
+      tags:
+      - perms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPermissions'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddPermissions'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddPermissions'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPermissionResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /perms/remove/:
+    post:
+      operationId: perms_remove_create
+      description: '# Remove a set of permissions from users'
+      tags:
+      - perms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPermissions'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddPermissions'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddPermissions'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemovePermissionResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /perms/roles/:
+    get:
+      operationId: perms_roles_list
+      description: '# Retrieve a list of paginated ressources.'
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - in: query
+        name: created_at
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: description
+        schema:
+          type: string
+      - in: query
+        name: description_contains
+        schema:
+          type: string
+        description: Description contains
+      - in: query
+        name: description_endswith
+        schema:
+          type: string
+        description: Description ends with
+      - in: query
+        name: description_startswith
+        schema:
+          type: string
+        description: Description starts with
+      - in: query
+        name: id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Name exact match
+      - in: query
+        name: name_contain
+        schema:
+          type: string
+        description: Name contains
+      - in: query
+        name: name_endswith
+        schema:
+          type: string
+        description: Name ends with
+      - in: query
+        name: name_startswith
+        schema:
+          type: string
+        description: Name starts with
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: org
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search through fields
+      tags:
+      - perms
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleList'
+          description: ''
+    post:
+      operationId: perms_roles_create
+      description: '# Create a new data.'
+      tags:
+      - perms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateRole'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRole'
+          description: ''
+  /perms/roles/bulk-delete/:
+    delete:
+      operationId: perms_roles_bulk_delete_destroy
+      description: |-
+        # Handles bulk deletion of resources.
+
+        This endpoint allows authenticated users to request the deletion of multiple
+        resources by providing their IDs using an `ids` field in the request data.
+
+        If the request contains ressource IDs that the authenticated user does not have permission to delete,
+        an error response is returned.
+
+        Resources are not physically deleted but are marked as deleted. On successful deletion,
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent ressource IDs, a success 200
+        response is returned detailing which resources were deleted and which IDs were not found.
+
+        If all provided IDs are not found, a 404 error response is returned with an
+        appropriate error message.
+      tags:
+      - perms
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /perms/roles/{id}/:
+    get:
+      operationId: perms_roles_retrieve
+      description: '# Get a ressource using its id.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Role.
+        required: true
+      tags:
+      - perms
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDetail'
+          description: ''
+    put:
+      operationId: perms_roles_update
+      description: '# Update an existing resource with the provided request data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Role.
+        required: true
+      tags:
+      - perms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateRole'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRole'
+          description: ''
+    delete:
+      operationId: perms_roles_destroy
+      description: '# Delete a resource.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Role.
+        required: true
+      tags:
+      - perms
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: perms_roles_partial_update
+      description: '# Partially updates a resource with the provided data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Role.
+        required: true
+      tags:
+      - perms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateRole'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRole'
+          description: ''
+  /perms/roles/{id}/change-owners/:
+    post:
+      operationId: perms_roles_change_owners_create
+      description: |-
+        # Change the owners of the object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Role.
+        required: true
+      tags:
+      - perms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/:
+    get:
+      operationId: orgs_list
+      description: '# Retrieve a list of paginated ressources.'
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - in: query
+        name: created_at
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: description
+        schema:
+          type: string
+      - in: query
+        name: description_contains
+        schema:
+          type: string
+        description: Description contains
+      - in: query
+        name: description_endswith
+        schema:
+          type: string
+        description: Description ends with
+      - in: query
+        name: description_startswith
+        schema:
+          type: string
+        description: Description starts with
+      - in: query
+        name: id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: members
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        explode: true
+        style: form
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Name exact match
+      - in: query
+        name: name_contain
+        schema:
+          type: string
+        description: Name contains
+      - in: query
+        name: name_endswith
+        schema:
+          type: string
+        description: Name ends with
+      - in: query
+        name: name_startswith
+        schema:
+          type: string
+        description: Name starts with
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search through fields
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrganizationList'
+          description: ''
+    post:
+      operationId: orgs_create
+      description: '# Create a new Organization.'
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganization'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateOrganization'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateOrganization'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateOrgResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/bulk-delete/:
+    delete:
+      operationId: orgs_bulk_delete_destroy
+      description: |-
+        # Handles bulk deletion of resources.
+
+        This endpoint allows authenticated users to request the deletion of multiple
+        resources by providing their IDs using an `ids` field in the request data.
+
+        If the request contains ressource IDs that the authenticated user does not have permission to delete,
+        an error response is returned.
+
+        Resources are not physically deleted but are marked as deleted. On successful deletion,
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent ressource IDs, a success 200
+        response is returned detailing which resources were deleted and which IDs were not found.
+
+        If all provided IDs are not found, a 404 error response is returned with an
+        appropriate error message.
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/{id}/:
+    get:
+      operationId: orgs_retrieve
+      description: '# Get a ressource using its id.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Organization.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationDetail'
+          description: ''
+    put:
+      operationId: orgs_update
+      description: '# Update an existing organization with the provided request data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Organization.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganization'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganization'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganization'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateOrgResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    delete:
+      operationId: orgs_destroy
+      description: '# Delete a resource.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Organization.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: orgs_partial_update
+      description: '# Partially updates a organization with the provided data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Organization.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateOrganization'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateOrganization'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateOrganization'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateOrgResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/{id}/change-owners/:
+    post:
+      operationId: orgs_change_owners_create
+      description: |-
+        # Change the owners of the object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Organization.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/{id}/departments/:
+    get:
+      operationId: orgs_departments_list
+      description: '# Retrieve a list of paginated ressources.'
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - in: query
+        name: created_at
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: description
+        schema:
+          type: string
+      - in: query
+        name: description_contains
+        schema:
+          type: string
+        description: Description contains
+      - in: query
+        name: description_endswith
+        schema:
+          type: string
+        description: Description ends with
+      - in: query
+        name: description_startswith
+        schema:
+          type: string
+        description: Description starts with
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: members
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        explode: true
+        style: form
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Name exact match
+      - in: query
+        name: name_contain
+        schema:
+          type: string
+        description: Name contains
+      - in: query
+        name: name_endswith
+        schema:
+          type: string
+        description: Name ends with
+      - in: query
+        name: name_startswith
+        schema:
+          type: string
+        description: Name starts with
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search through fields
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDepartmentList'
+          description: ''
+    post:
+      operationId: orgs_departments_create
+      description: '# Create a new department.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDepartment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateDepartment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateDepartment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateDepartResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/{id}/departments/bulk-delete/:
+    delete:
+      operationId: orgs_departments_bulk_delete_destroy
+      description: |-
+        # Handles bulk deletion of resources.
+
+        This endpoint allows authenticated users to request the deletion of multiple
+        resources by providing their IDs using an `ids` field in the request data.
+
+        If the request contains ressource IDs that the authenticated user does not have permission to delete,
+        an error response is returned.
+
+        Resources are not physically deleted but are marked as deleted. On successful deletion,
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent ressource IDs, a success 200
+        response is returned detailing which resources were deleted and which IDs were not found.
+
+        If all provided IDs are not found, a 404 error response is returned with an
+        appropriate error message.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/{id}/departments/{depart_id}/change-owners/:
+    post:
+      operationId: orgs_departments_change_owners_create
+      description: |-
+        # Change the owners of the object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+      parameters:
+      - in: path
+        name: depart_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /orgs/{id}/departments/{depart_id}/:
+    get:
+      operationId: orgs_departments_retrieve
+      description: '# Get a ressource using its id.'
+      parameters:
+      - in: path
+        name: depart_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentDeail'
+          description: ''
+    put:
+      operationId: orgs_departments_update
+      description: '# Update an existing department with the provided request data.'
+      parameters:
+      - in: path
+        name: depart_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDepartment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateDepartment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateDepartment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateDepartResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    delete:
+      operationId: orgs_departments_destroy
+      description: '# Delete a resource.'
+      parameters:
+      - in: path
+        name: depart_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: orgs_departments_partial_update
+      description: '# Partially updates a department with the provided data.'
+      parameters:
+      - in: path
+        name: depart_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateDepartment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateDepartment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateDepartment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateDepartResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tags/:
+    get:
+      operationId: tags_list
+      description: '# Retrieve a list of paginated ressources.'
+      parameters:
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: description_contains
+        schema:
+          type: string
+        description: Description contains
+      - in: query
+        name: description_endswith
+        schema:
+          type: string
+        description: Description ends with
+      - in: query
+        name: description_startswith
+        schema:
+          type: string
+        description: Description starts with
+      - in: query
+        name: ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Name exact match
+      - in: query
+        name: name_contain
+        schema:
+          type: string
+        description: Name contains
+      - in: query
+        name: name_endswith
+        schema:
+          type: string
+        description: Name ends with
+      - in: query
+        name: name_startswith
+        schema:
+          type: string
+        description: Name starts with
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search through fields
+      tags:
+      - tags
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTagList'
+          description: ''
+    post:
+      operationId: tags_create
+      description: '# Create a new data.'
+      tags:
+      - tags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateTag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTag'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTag'
+          description: ''
+  /tags/bulk-delete/:
+    delete:
+      operationId: tags_bulk_delete_destroy
+      description: |-
+        # Handles bulk deletion of resources.
+
+        This endpoint allows authenticated users to request the deletion of multiple
+        resources by providing their IDs using an `ids` field in the request data.
+
+        If the request contains ressource IDs that the authenticated user does not have permission to delete,
+        an error response is returned.
+
+        Resources are not physically deleted but are marked as deleted. On successful deletion,
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent ressource IDs, a success 200
+        response is returned detailing which resources were deleted and which IDs were not found.
+
+        If all provided IDs are not found, a 404 error response is returned with an
+        appropriate error message.
+      tags:
+      - tags
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tags/{id}/:
+    get:
+      operationId: tags_retrieve
+      description: '# Get a ressource using its id.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this tag.
+        required: true
+      tags:
+      - tags
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagDetail'
+          description: ''
+    put:
+      operationId: tags_update
+      description: '# Update an existing resource with the provided request data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this tag.
+        required: true
+      tags:
+      - tags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateTag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateTag'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTag'
+          description: ''
+    delete:
+      operationId: tags_destroy
+      description: '# Delete a resource.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this tag.
+        required: true
+      tags:
+      - tags
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: tags_partial_update
+      description: '# Partially updates a resource with the provided data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this tag.
+        required: true
+      tags:
+      - tags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTag'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTag'
+          description: ''
+  /tags/{id}/change-owners/:
+    post:
+      operationId: tags_change_owners_create
+      description: |-
+        # Change the owners of the object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this tag.
+        required: true
+      tags:
+      - tags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tasks/:
+    get:
+      operationId: tasks_list
+      description: '# Retrieve a list of paginated ressources.'
+      parameters:
+      - in: query
+        name: actual_duration
+        schema:
+          type: string
+          format: duration
+      - in: query
+        name: assigned_to_emails
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: assigned_to_first_names
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: assigned_to_ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - in: query
+        name: created_at
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+        description: Date from to
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: depart
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: description
+        schema:
+          type: string
+      - in: query
+        name: description_contains
+        schema:
+          type: string
+        description: Description contains
+      - in: query
+        name: description_endswith
+        schema:
+          type: string
+        description: Description ends with
+      - in: query
+        name: description_startswith
+        schema:
+          type: string
+        description: Description starts with
+      - in: query
+        name: due_date_after
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: due_date_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: estimated_duration
+        schema:
+          type: string
+          format: duration
+      - in: query
+        name: id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Name exact match
+      - in: query
+        name: name_contain
+        schema:
+          type: string
+        description: Name contains
+      - in: query
+        name: name_endswith
+        schema:
+          type: string
+        description: Name ends with
+      - in: query
+        name: name_startswith
+        schema:
+          type: string
+        description: Name starts with
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: org
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: priority
+        schema:
+          type: string
+          enum:
+          - critical
+          - high
+          - low
+          - medium
+        description: |-
+          Priority level of the task
+
+          * `low` - Low
+          * `medium` - Medium
+          * `high` - High
+          * `critical` - Critical
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search through fields
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - cancelled
+          - completed
+          - in_progress
+          - pending
+        description: |-
+          Current status of the task
+
+          * `pending` - Pending
+          * `in_progress` - In Progress
+          * `completed` - Completed
+          * `cancelled` - Cancelled
+      - in: query
+        name: tag_ids
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: tag_names
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      tags:
+      - tasks
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTaskList'
+          description: ''
+    post:
+      operationId: tasks_create
+      description: '# Create a new Task.'
+      tags:
+      - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateTaskResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tasks/bulk-delete/:
+    delete:
+      operationId: tasks_bulk_delete_destroy
+      description: |-
+        # Handles bulk deletion of resources.
+
+        This endpoint allows authenticated users to request the deletion of multiple
+        resources by providing their IDs using an `ids` field in the request data.
+
+        If the request contains ressource IDs that the authenticated user does not have permission to delete,
+        an error response is returned.
+
+        Resources are not physically deleted but are marked as deleted. On successful deletion,
+        a 204 No Content response is returned.
+
+        If the request includes a mix of accessible and non-existent ressource IDs, a success 200
+        response is returned detailing which resources were deleted and which IDs were not found.
+
+        If all provided IDs are not found, a 404 error response is returned with an
+        appropriate error message.
+      tags:
+      - tasks
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tasks/{id}/:
+    get:
+      operationId: tasks_retrieve
+      description: '# Get a ressource using its id.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      tags:
+      - tasks
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetail'
+          description: ''
+    put:
+      operationId: tasks_update
+      description: '# Update an existing task with the provided request data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      tags:
+      - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskSeriliazer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskSeriliazer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskSeriliazer'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateTaskResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+    delete:
+      operationId: tasks_destroy
+      description: '# Delete a resource.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      tags:
+      - tasks
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+    patch:
+      operationId: tasks_partial_update
+      description: '# Partially updates task with the provided data.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      tags:
+      - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTaskSeriliazer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTaskSeriliazer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTaskSeriliazer'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUpdateTaskResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tasks/{id}/change-owners/:
+    post:
+      operationId: tasks_change_owners_create
+      description: |-
+        # Change the owners of the object.
+        This endpoint allows an authenticated user to update the list of owners for a specific object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      tags:
+      - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeUserOwnerList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+  /tasks/{id}/update-status/:
+    patch:
+      operationId: tasks_update_status_partial_update
+      description: '# Update Task status.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      tags:
+      - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTaskStatus'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTaskStatus'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateTaskStatus'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTaskStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalValidationErrorResponse'
+              examples:
+                GenericErrorResponse:
+                  value:
+                    field_name:
+                    - Error message for a specific field, where 'field_name' is the
+                      key used during the request
+                    non_field_errors:
+                    - Error message for a non-field-specific error
+                    detail: General error message for responses other than validation
+                      errors
+                  summary: Generic error response for various HTTP status codes
+          description: ''
+components:
+  schemas:
+    AddPermissionResponse:
+      type: object
+      properties:
+        added:
+          type: array
+          items:
+            type: string
+        not_found:
+          type: array
+          items:
+            type: string
+      required:
+      - added
+      - not_found
+    AddPermissions:
+      type: object
+      properties:
+        org:
+          type: string
+          format: uuid
+          writeOnly: true
+        user_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          writeOnly: true
+        perms:
+          type: array
+          items:
+            type: string
+          writeOnly: true
+      required:
+      - org
+      - perms
+      - user_ids
+    AuthorizationField:
+      type: object
+      properties:
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        perms:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermData'
+          readOnly: true
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimpleRole'
+          readOnly: true
+      required:
+      - org
+      - perms
+      - roles
+    ChangeUserOwnerList:
+      type: object
+      properties:
+        owner_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - owner_ids
+    CreateDepartment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - id
+      - name
+      - org
+    CreateOrganization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - id
+      - name
+    CreateRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        perms:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+        users:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - id
+      - name
+      - org
+    CreateTag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - id
+      - name
+      - org
+    CreateTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: Name of the task
+        description:
+          type: string
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority74aEnum'
+          default: medium
+          description: |-
+            Priority level of the task
+
+            * `low` - low
+            * `medium` - medium
+            * `high` - high
+            * `critical` - critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusD6aEnum'
+          default: pending
+          description: |-
+            Current status of the task
+
+            * `pending` - pending
+            * `in_progress` - in_progress
+            * `completed` - completed
+            * `cancelled` - cancelled
+        estimated_duration:
+          type: string
+          nullable: true
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          nullable: true
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_to:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Users assigned to this task
+        tags:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Tags associated with the task
+        depart:
+          type: string
+          format: uuid
+          nullable: true
+          description: Department to which the task belongs
+        org:
+          type: string
+          format: uuid
+          description: Organization to which the task belongs
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - id
+      - name
+      - org
+    CreateUpdateDepartResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Department name
+          readOnly: true
+        description:
+          type: string
+          title: Department description
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - members
+      - name
+      - org
+    CreateUpdateOrgResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Organization name
+          readOnly: true
+        description:
+          type: string
+          title: Organization description
+          readOnly: true
+        owner:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - members
+      - name
+      - owner
+    CreateUpdateTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Task Name
+          description: Name of the task
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Task Description
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority5f3Enum'
+          readOnly: true
+          description: |-
+            Priority level of the task
+
+            * `low` - Low
+            * `medium` - Medium
+            * `high` - High
+            * `critical` - Critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusDc7Enum'
+          readOnly: true
+          description: |-
+            Current status of the task
+
+            * `pending` - Pending
+            * `in_progress` - In Progress
+            * `completed` - Completed
+            * `cancelled` - Cancelled
+        estimated_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Estimated Time
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Actual Time
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_to:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          readOnly: true
+        depart:
+          type: string
+          format: uuid
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - actual_duration
+      - assigned_to
+      - can_be_accessed_by
+      - created_at
+      - depart
+      - description
+      - due_date
+      - estimated_duration
+      - id
+      - name
+      - org
+      - priority
+      - status
+      - tags
+    CreateUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+          minLength: 3
+        last_name:
+          type: string
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationField'
+          readOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - authorizations
+      - can_be_accessed_by
+      - created_at
+      - email
+      - first_name
+      - id
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Department name
+          readOnly: true
+        description:
+          type: string
+          title: Department description
+          readOnly: true
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - org
+    DepartmentDeail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Department name
+          readOnly: true
+        description:
+          type: string
+          title: Department description
+          readOnly: true
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - members
+      - name
+      - org
+    GlobalMessageResponse:
+      type: object
+      description: Global message response serializer
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    GlobalValidationErrorResponse:
+      type: object
+      description: Global validation error response serializer
+      properties:
+        field:
+          type: array
+          items:
+            type: string
+          description: List of errors. **non_field_errors** is used for non-field
+            errors
+      required:
+      - field
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Organization name
+          readOnly: true
+        description:
+          type: string
+          title: Organization description
+          readOnly: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - owner
+    OrganizationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Organization name
+          readOnly: true
+        description:
+          type: string
+          title: Organization description
+          readOnly: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - members
+      - name
+      - owner
+    PaginatedDepartmentList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Department'
+    PaginatedOrganizationList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+    PaginatedRoleList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    PaginatedTagList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+    PaginatedTaskList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+    PaginatedUserList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PasswordReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    PasswordResetConfirm:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 8
+        password2:
+          type: string
+          minLength: 8
+      required:
+      - password
+      - password2
+    PatchedUpdateDepartment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        org:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+    PatchedUpdateOrganization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+    PatchedUpdateRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        perms:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+        users:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+    PatchedUpdateTag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+    PatchedUpdateTaskSeriliazer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: Name of the task
+        description:
+          type: string
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority74aEnum'
+          description: |-
+            Priority level of the task
+
+            * `low` - low
+            * `medium` - medium
+            * `high` - high
+            * `critical` - critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusD6aEnum'
+          description: |-
+            Current status of the task
+
+            * `pending` - pending
+            * `in_progress` - in_progress
+            * `completed` - completed
+            * `cancelled` - cancelled
+        estimated_duration:
+          type: string
+          nullable: true
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          nullable: true
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_to:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Users assigned to this task
+        tags:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Tags associated with the task
+        depart:
+          type: string
+          format: uuid
+          nullable: true
+          description: Department to which the task belongs
+        org:
+          type: string
+          format: uuid
+          description: Organization to which the task belongs
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+    PatchedUpdateTaskStatus:
+      type: object
+      description: Use to allow `assigned_to` user to be able to update task status
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Task Name
+          description: Name of the task
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Task Description
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority5f3Enum'
+          readOnly: true
+          description: |-
+            Priority level of the task
+
+            * `low` - Low
+            * `medium` - Medium
+            * `high` - High
+            * `critical` - Critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusD6aEnum'
+          description: |-
+            Current status of the task
+
+            * `pending` - pending
+            * `in_progress` - in_progress
+            * `completed` - completed
+            * `cancelled` - cancelled
+        estimated_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Estimated Time
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Actual Time
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUpdateUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+          minLength: 3
+        last_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationField'
+          readOnly: true
+    PermData:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        help_text:
+          type: string
+      required:
+      - help_text
+      - label
+      - name
+    Priority5f3Enum:
+      enum:
+      - low
+      - medium
+      - high
+      - critical
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+        * `critical` - Critical
+    Priority74aEnum:
+      enum:
+      - low
+      - medium
+      - high
+      - critical
+      type: string
+      description: |-
+        * `low` - low
+        * `medium` - medium
+        * `high` - high
+        * `critical` - critical
+    Registration:
+      type: object
+      description: Registration route request data
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+          minLength: 3
+        last_name:
+          type: string
+          default: ''
+        password:
+          type: string
+          minLength: 8
+        password2:
+          type: string
+          description: Same value as the password field and should be provide by the
+            user
+          minLength: 8
+      required:
+      - email
+      - first_name
+      - password
+      - password2
+    RegistrationResponse:
+      type: object
+      description: Registration response fields
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+    RemovePermissionResponse:
+      type: object
+      properties:
+        removed:
+          type: array
+          items:
+            type: string
+        not_found:
+          type: array
+          items:
+            type: string
+      required:
+      - not_found
+      - removed
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Name of the role
+          readOnly: true
+        description:
+          type: string
+          title: Role description
+          readOnly: true
+        perms:
+          type: array
+          items:
+            type: string
+          description: Get permissions of the user as a list
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - org
+      - perms
+    RoleDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Name of the role
+          readOnly: true
+        description:
+          type: string
+          title: Role description
+          readOnly: true
+        perms:
+          type: array
+          items:
+            type: string
+          description: Get permissions of the user as a list
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - name
+      - org
+      - perms
+      - users
+    SimpleRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Name of the role
+          readOnly: true
+        description:
+          type: string
+          title: Role description
+          readOnly: true
+        perms:
+          type: array
+          items:
+            type: string
+          description: Get permissions of the user as a list
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - perms
+    StatusD6aEnum:
+      enum:
+      - pending
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - pending
+        * `in_progress` - in_progress
+        * `completed` - completed
+        * `cancelled` - cancelled
+    StatusDc7Enum:
+      enum:
+      - pending
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `in_progress` - In Progress
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Tag Name
+          description: Name of the tag
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Tag Description
+          description: Description of the tag
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - name
+    TagDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Tag Name
+          description: Name of the tag
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Tag Description
+          description: Description of the tag
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - name
+      - org
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Task Name
+          description: Name of the task
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Task Description
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority5f3Enum'
+          readOnly: true
+          description: |-
+            Priority level of the task
+
+            * `low` - Low
+            * `medium` - Medium
+            * `high` - High
+            * `critical` - Critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusDc7Enum'
+          readOnly: true
+          description: |-
+            Current status of the task
+
+            * `pending` - Pending
+            * `in_progress` - In Progress
+            * `completed` - Completed
+            * `cancelled` - Cancelled
+        estimated_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Estimated Time
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Actual Time
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actual_duration
+      - created_at
+      - description
+      - due_date
+      - estimated_duration
+      - id
+      - name
+      - priority
+      - status
+    TaskDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Task Name
+          description: Name of the task
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Task Description
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority5f3Enum'
+          readOnly: true
+          description: |-
+            Priority level of the task
+
+            * `low` - Low
+            * `medium` - Medium
+            * `high` - High
+            * `critical` - Critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusDc7Enum'
+          readOnly: true
+          description: |-
+            Current status of the task
+
+            * `pending` - Pending
+            * `in_progress` - In Progress
+            * `completed` - Completed
+            * `cancelled` - Cancelled
+        estimated_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Estimated Time
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Actual Time
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_to:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          readOnly: true
+        depart:
+          allOf:
+          - $ref: '#/components/schemas/Department'
+          readOnly: true
+        org:
+          allOf:
+          - $ref: '#/components/schemas/Organization'
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - actual_duration
+      - assigned_to
+      - can_be_accessed_by
+      - created_at
+      - depart
+      - description
+      - due_date
+      - estimated_duration
+      - id
+      - name
+      - org
+      - priority
+      - status
+      - tags
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    UpdateDepartment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        org:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - members
+      - name
+      - org
+    UpdateOrganization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - members
+      - name
+      - owner
+    UpdateRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        perms:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+        users:
+          type: array
+          items:
+            type: string
+            format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - name
+      - org
+      - perms
+      - users
+    UpdateTag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        org:
+          type: string
+          format: uuid
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - can_be_accessed_by
+      - created_at
+      - description
+      - id
+      - name
+      - org
+    UpdateTaskSeriliazer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: Name of the task
+        description:
+          type: string
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority74aEnum'
+          description: |-
+            Priority level of the task
+
+            * `low` - low
+            * `medium` - medium
+            * `high` - high
+            * `critical` - critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusD6aEnum'
+          description: |-
+            Current status of the task
+
+            * `pending` - pending
+            * `in_progress` - in_progress
+            * `completed` - completed
+            * `cancelled` - cancelled
+        estimated_duration:
+          type: string
+          nullable: true
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          nullable: true
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_to:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Users assigned to this task
+        tags:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Tags associated with the task
+        depart:
+          type: string
+          format: uuid
+          nullable: true
+          description: Department to which the task belongs
+        org:
+          type: string
+          format: uuid
+          description: Organization to which the task belongs
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - actual_duration
+      - assigned_to
+      - can_be_accessed_by
+      - created_at
+      - depart
+      - description
+      - due_date
+      - estimated_duration
+      - id
+      - name
+      - org
+      - priority
+      - status
+      - tags
+    UpdateTaskStatus:
+      type: object
+      description: Use to allow `assigned_to` user to be able to update task status
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          title: Task Name
+          description: Name of the task
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Task Description
+          description: Detailed description of the task
+        due_date:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Deadline for the task
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/Priority5f3Enum'
+          readOnly: true
+          description: |-
+            Priority level of the task
+
+            * `low` - Low
+            * `medium` - Medium
+            * `high` - High
+            * `critical` - Critical
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusD6aEnum'
+          description: |-
+            Current status of the task
+
+            * `pending` - pending
+            * `in_progress` - in_progress
+            * `completed` - completed
+            * `cancelled` - cancelled
+        estimated_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Estimated Time
+          description: Estimated time to complete the task
+        actual_duration:
+          type: string
+          readOnly: true
+          nullable: true
+          title: Actual Time
+          description: Actual time spent on the task
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actual_duration
+      - created_at
+      - description
+      - due_date
+      - estimated_duration
+      - id
+      - name
+      - priority
+      - status
+    UpdateUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+          minLength: 3
+        last_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationField'
+          readOnly: true
+      required:
+      - authorizations
+      - can_be_accessed_by
+      - created_at
+      - email
+      - first_name
+      - id
+      - last_name
+    UpdateUserPassword:
+      type: object
+      properties:
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - confirm_new_password
+      - new_password
+      - password
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - first_name
+      - id
+      - last_name
+    UserDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        can_be_accessed_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+          readOnly: true
+        authorizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationField'
+          readOnly: true
+      required:
+      - authorizations
+      - can_be_accessed_by
+      - created_at
+      - email
+      - first_name
+      - id
+      - last_name
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+externalDocs:
+  url: https://romulad.gitbook.io/org-api
+  description: Documentation
